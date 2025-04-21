@@ -1,14 +1,15 @@
 import React, { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { GoogleMap, Polygon, useJsApiLoader } from '@react-google-maps/api';
+import { GoogleMap, Polygon, useJsApiLoader, HeatmapLayer } from '@react-google-maps/api';
 import { AppContext } from '../../context/Context';
 
 export default function Final() {
   const panelsPalette = ['E8EAF6', '1A237E'];
   const { data, completeAddress, buildingInsights } = useContext(AppContext);
-  const [panelRange, setPanelRange] = useState(0);
+  const [panelRange, setPanelRange] = useState();
   const [openSection, setOpenSection] = useState(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const [imageSrc, setImageSrc] = useState("assets/img/solar_api.png");
   const [showProfileCard, setShowProfileCard] = useState(false);
   const [showSolarCard, setShowSolarCard] = useState(false);
@@ -16,16 +17,15 @@ export default function Final() {
   const [solarPolygons, setSolarPolygons] = useState([]);
   const [showChart, setShowChart] = useState(false);
   const [roofSegments, setRoofSegments] = useState([]);
+  const [yearlyEngery, setYearlyEngery] = useState();
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [panelCapacity, setPanelCapacity] = useState(buildingInsights?.solarPotential.panelCapacityWatts);
   const [polygons, setPolygons] = useState([]);
   const [center, setCenter] = useState({
     lat: parseFloat(completeAddress["geo"][0].toFixed(5)),
     lng: parseFloat(completeAddress["geo"][1].toFixed(5)),
   });
 
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "YOUR_GOOGLE_API_KEY",
-    libraries: ["geometry"]
-  });
 
   const clamp = (x, min, max) => Math.min(Math.max(x, min), max);
   const normalize = (x, max = 1, min = 0) => clamp((x - min) / (max - min), 0, 1);
@@ -39,6 +39,7 @@ export default function Final() {
       b: parseInt(hex.substring(4, 6), 16),
     };
   };
+
 
   const rgbToColor = ({ r, g, b }) => {
     const f = (x) => {
@@ -64,8 +65,30 @@ export default function Final() {
     });
   };
 
+  const generateHeatmapData = () => {
+    if (!buildingInsights) return [];
+
+    const segmentStats = buildingInsights?.solarPotential?.roofSegmentStats || [];
+
+    return segmentStats.flatMap(segment => {
+      return segment.center ? [{
+        location: new window.google.maps.LatLng(segment.center.latitude, segment.center.longitude),
+        weight: 1 // Full intensity
+      }] : [];
+    });
+  };
+
+
+
+  const handleChange = (event) => {
+    const newPanelCapacity = Number(event.target.value);
+    setPanelCapacity(newPanelCapacity);
+
+    yearlyEnergyConsumption(newPanelCapacity);
+  };
+
   const findPanelsCount = (yearlymax) => {
-    let config=null;
+    let config = null;
     const solarPanelConfigs = buildingInsights?.solarPotential?.solarPanelConfigs;
     for (let i = 0; i < solarPanelConfigs?.length; i++) {
       config = solarPanelConfigs[i];
@@ -123,27 +146,41 @@ export default function Final() {
   }, [panelRange, buildingInsights]);
 
   useEffect(() => {
-    if (buildingInsights) drawPolygons();
-    yearlyEnergyConsumption();
+    if (buildingInsights) {
+      drawPolygons();
+      yearlyEnergyConsumption();
+      const heatmapPoints = generateHeatmapData();
+      setHeatmapData(heatmapPoints);
+    }
 
   }, [buildingInsights, drawPolygons]);
 
-  const yearlyEnergyConsumption = () => {
+  const yearlyEnergyConsumption = (newPanelCapacityWatts) => {
+    if (newPanelCapacityWatts == undefined) {
+      newPanelCapacityWatts = buildingInsights?.solarPotential.panelCapacityWatts;
+    }
     let monthlyAverageEnergyBillInput = 300;
-    let panelCapacityWattsInput = 250;
+    // let panelCapacityWattsInput = 250;
     let energyCostPerKwhInput = 0.31;
     let dcToAcDerateInput = 0.85;
     let yearlyKwhEnergyConsumption = (monthlyAverageEnergyBillInput / energyCostPerKwhInput) * 12;
-    const defaultPanelCapacity = buildingInsights.solarPotential.panelCapacityWatts;
-    const panelCapacityRatio = panelCapacityWattsInput / defaultPanelCapacity;
+
+    // const defaultPanelCapacity = newPanelCapacityWatts / buildingInsights.solarPotential.panelCapacityWatts;
+    const panelCapacityRatio = newPanelCapacityWatts / buildingInsights.solarPotential.panelCapacityWatts;
     const haji = panelCapacityRatio * dcToAcDerateInput;
     const yearlymax = yearlyKwhEnergyConsumption / haji;
+    const fixedValue = yearlymax.toFixed(2);
+    setYearlyEngery(fixedValue)
     const panelCount = findPanelsCount(yearlymax);
-    if(panelCount){
+    if (panelCount) {
       setPanelRange(panelCount);
     }
   }
 
+  const updateRangeFunc = (event) => {
+    let val = Number(event.target.value);
+    setPanelRange(val);
+  }
 
   const toggleSection = (section) => {
     if (openSection === section) {
@@ -189,9 +226,48 @@ export default function Final() {
                 disableDefaultUI: true,
               }}
             >
+
+              {heatmapData.length > 0 && (
+                <>
+
+                  {/* <HeatmapLayer
+                  data={heatmapData}
+                  options={{
+                    radius: 40,  // Adjust for smoothness
+                    opacity: 0.7,
+                    gradient: [
+                      "rgba(255, 255, 0, 0)",
+                      "rgba(255, 255, 0, 0.25)",
+                      "rgba(255, 255, 0, 0.5)",
+                      "rgba(255, 255, 0, 0.75)",
+                      "rgba(255, 255, 0, 1)"
+                    ]
+                  }}
+                /> */}
+                  {showHeatmap == true && (
+                    <HeatmapLayer
+                      data={heatmapData}
+                      options={{
+                        radius: 40,
+                        opacity: 0.7,
+                        gradient: [
+                          "rgba(255, 255, 0, 0)",
+                          "rgba(255, 255, 0, 0.25)",
+                          "rgba(255, 255, 0, 0.5)",
+                          "rgba(255, 255, 0, 0.75)",
+                          "rgba(255, 255, 0, 1)"
+                        ]
+                      }}
+                    />
+                  )}
+                </>
+
+
+              )}
               {solarPolygons.map((poly, index) => (
                 <Polygon key={index} paths={poly.path} options={poly.options} />
               ))}
+
             </GoogleMap>
             {showProfileCard && (
               <div className="insights-card position-absolute" style={{ top: "20px", left: "20px", zIndex: 1000 }}>
@@ -203,11 +279,17 @@ export default function Final() {
                 <div className="card-body">
                   <div className="data-row">
                     <span>Annual sunshine</span>
-                    <span className="value">{'N/A'}</span>
+                    <span className="value">
+                      {buildingInsights?.solarPotential?.maxSunshineHoursPerYear
+                        ? `${buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1)} hr`
+                        : 'N/A'}
+                    </span>
                   </div>
                   <div className="data-row">
                     <span>Roof area</span>
-                    <span className="value">{'N/A'}</span>
+                    <span className="value">
+                      {buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2) || 'N/A'} m²
+                    </span>
                   </div>
                   <div className="data-row">
                     <span>Max panel count</span>
@@ -215,7 +297,11 @@ export default function Final() {
                   </div>
                   <div className="data-row">
                     <span>CO₂ savings</span>
-                    <span className="value">{'N/A'}</span>
+                    <span className="value">
+                      {buildingInsights.solarPotential.carbonOffsetFactorKgPerMwh
+                        ? `${buildingInsights.solarPotential.carbonOffsetFactorKgPerMwh.toFixed(1)} Kg/MWh`
+                        : 'N/A'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -313,7 +399,7 @@ export default function Final() {
                   >
                     <span>
                       <i className="fas fa-home icon text-warning me-2"></i> <b>Building Insights endpoint</b>
-                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>Yearly energy: 14.06 MWh</p>
+                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>Yearly energy: {yearlyEngery && yearlyEngery} Wh </p>
                     </span>
                     <i className={` fas fa-chevron-${openSection === "section1" ? "up" : "down"}`}></i>
                   </div>
@@ -329,21 +415,34 @@ export default function Final() {
                       </div>
                       <input
                         type="range"
-                        className="form-range"
+                        id="panelRange"
                         max={buildingInsights?.solarPotential?.maxArrayPanelsCount}
                         value={panelRange}
-                        onChange={(e) => setPanelRange(Number(e.target.value))}
+                        onChange={updateRangeFunc}
                       />
 
                       <fieldset className="border p-2 rounded">
                         <legend className="fs-6 text-muted">Panel Capacity</legend>
-                        <input type="number" className="form-control" defaultValue="250" />
+                        <div className="input-group">
+                          <input
+                            type="number"
+                            className="form-control"
+                            value={panelCapacity}
+                            onChange={handleChange}
+                          />
+                          <span className="input-group-text">Watts</span>
+                        </div>
                       </fieldset>
                       <div className="d-flex justify-content-between align-items-center mt-4">
                         <div className="content">
                           <div className="checkbox-group">
                             <label className="toggle2">
-                              <input type="checkbox" id="cb2" name="toggle2" /><i></i></label>
+                              <input
+                                type="checkbox"
+                                checked={showHeatmap}
+                                onChange={(e) => setShowHeatmap(e.target.checked)}
+                              />
+                              <i></i></label>
                             <label htmlFor="toggle" style={{ marginLeft: '5px' }}>
                               Heat Map{" "}
                             </label>

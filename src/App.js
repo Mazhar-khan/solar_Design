@@ -13,7 +13,7 @@ function App() {
   return (
     <Router>
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAP_API_KEY} 
-      libraries={['places','geometry']}>
+      libraries={['places','geometry','visualization']}>
         <div className="App">
           <Routes>
             <Route path="/" element={<Estimated />} />
