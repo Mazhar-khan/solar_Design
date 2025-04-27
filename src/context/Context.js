@@ -32,6 +32,7 @@ export const AppProvider = ({ children }) => {
     });
 
     const [buildingInsights, setBuildingInsights] = useState(null);
+    const [dataLayers, setDataLayers] = useState(null);
     const [userAddress, setUserAddress] = useState(null);
     const [completeAddress, setCompleteAddress] = useState(null);
 
@@ -44,7 +45,19 @@ export const AppProvider = ({ children }) => {
     // }, [userData]);
 
     return (
-        <AppContext.Provider value={{ data, setData, buildingInsights, setBuildingInsights, userAddress, setUserAddress, setCompleteAddress, completeAddress }}>
+        <AppContext.Provider 
+        value={{ 
+            data, 
+            setData, 
+            buildingInsights, 
+            setBuildingInsights, 
+            userAddress, 
+            setUserAddress, 
+            setCompleteAddress, 
+            completeAddress,
+            dataLayers,
+            setDataLayers
+            }}>
             {children}
         </AppContext.Provider>
     );

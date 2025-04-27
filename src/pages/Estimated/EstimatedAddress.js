@@ -13,20 +13,6 @@ export default function EstimatedAddress() {
     const [lat, setLat] = useState(completeAddress["geo"][0].toFixed(5));
     const [long, setLong] = useState(completeAddress["geo"][1].toFixed(5));
 
-    // Extracting data from context
-    // const address = data.locationInfo ?
-    //     `${data.locationInfo.street} ${data.locationInfo.streetNumber}, ${data.locationInfo.city}, ${data.locationInfo.state} ${data.locationInfo.postalCode}, USA` :
-    //     "Address not provided";
-
-
-    // useEffect(() => {
-    //     console.log("buildingInsights", buildingInsights);
-    //     console.log("userAddress", userAddress);
-    //     console.log("completeAddress", completeAddress);
-    //     // setLat();
-    //     // setLong()
-    // }, [])
-
     return (
         <div>
             <div

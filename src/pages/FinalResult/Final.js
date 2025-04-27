@@ -1,12 +1,15 @@
 import React, { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
+import * as geotiff from 'geotiff';
+import * as geokeysToProj4 from 'geotiff-geokeys-to-proj4';
+import proj4 from 'proj4';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { GoogleMap, Polygon, useJsApiLoader, HeatmapLayer } from '@react-google-maps/api';
 import { AppContext } from '../../context/Context';
 
 export default function Final() {
   const panelsPalette = ['E8EAF6', '1A237E'];
-  const { data, completeAddress, buildingInsights } = useContext(AppContext);
+  const { data, completeAddress, buildingInsights, dataLayers } = useContext(AppContext);
   const [panelRange, setPanelRange] = useState();
   const [openSection, setOpenSection] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
@@ -26,6 +29,53 @@ export default function Final() {
     lng: parseFloat(completeAddress["geo"][1].toFixed(5)),
   });
 
+
+  const downloadGeoTIFF = async () => {
+    const apiKey = "AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg";
+    const url = dataLayers.rgbUrl;
+    console.log(`Downloading data layer: ${url}`);
+
+    const solarUrl = url.includes('solar.googleapis.com') ? url + `&key=${apiKey}` : url;
+    const response = await fetch(solarUrl);
+    console.log("response", response.body)
+    if (response.status !== 200) {
+      const error = await response.json();
+      console.error(`downloadGeoTIFF failed: ${url}\n`, error);
+      throw error;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const tiff = await geotiff.fromArrayBuffer(arrayBuffer);
+    const image = await tiff.getImage();
+    const rasters = await image.readRasters();
+
+    const geoKeys = image.getGeoKeys();
+    const projObj = geokeysToProj4.toProj4(geoKeys);
+    const projection = proj4(projObj.proj4, 'WGS84');
+    const box = image.getBoundingBox();
+    const sw = projection.forward({
+      x: box[0] * projObj.coordinatesConversionParameters.x,
+      y: box[1] * projObj.coordinatesConversionParameters.y,
+    });
+    const ne = projection.forward({
+      x: box[2] * projObj.coordinatesConversionParameters.x,
+      y: box[3] * projObj.coordinatesConversionParameters.y,
+    });
+
+    return {
+      width: rasters.width,
+      height: rasters.height,
+      rasters: [...Array(rasters.length).keys()].map((i) =>
+        Array.from(rasters[i])
+      ),
+      bounds: {
+        north: ne.y,
+        south: sw.y,
+        east: ne.x,
+        west: sw.x,
+      },
+    };
+  }
 
   const clamp = (x, min, max) => Math.min(Math.max(x, min), max);
   const normalize = (x, max = 1, min = 0) => clamp((x - min) / (max - min), 0, 1);
@@ -64,20 +114,6 @@ export default function Final() {
       };
     });
   };
-
-  const generateHeatmapData = () => {
-    if (!buildingInsights) return [];
-
-    const segmentStats = buildingInsights?.solarPotential?.roofSegmentStats || [];
-
-    return segmentStats.flatMap(segment => {
-      return segment.center ? [{
-        location: new window.google.maps.LatLng(segment.center.latitude, segment.center.longitude),
-        weight: 1 // Full intensity
-      }] : [];
-    });
-  };
-
 
 
   const handleChange = (event) => {
@@ -145,15 +181,103 @@ export default function Final() {
     setSolarPolygons(polygons);
   }, [panelRange, buildingInsights]);
 
+  const drawSunlightPolygons = useCallback(() => {
+    if (!window.google || !buildingInsights) return;
+
+    const geometryLibrary = window.google.maps.geometry;
+    const sunSegments = buildingInsights?.solarPotential?.roofSegmentStats || [];
+
+    console.log("sunSegments", sunSegments);
+
+    const getFluxColor = (flux) => {
+      const maxFlux = 1200;
+      const minFlux = 600;
+      const norm = normalize(flux, maxFlux, minFlux);
+      const intensity = Math.round(200 + 55 * norm);
+      return `rgb(255, 255, ${255 - intensity})`;
+    };
+
+    const polygons = sunSegments.map((segment) => {
+      const sw = segment.boundingBox.sw;
+      const ne = segment.boundingBox.ne;
+
+      const path = [
+        { lat: sw.latitude, lng: sw.longitude },
+        { lat: sw.latitude, lng: ne.longitude },
+        { lat: ne.latitude, lng: ne.longitude },
+        { lat: ne.latitude, lng: sw.longitude },
+      ];
+
+      return {
+        path,
+        options: {
+          strokeColor: '#FFD700',
+          strokeOpacity: 1,
+          strokeWeight: 1,
+          fillColor: getFluxColor(segment.stats.sunshineQuantiles?.[5] || 0),
+          fillOpacity: 0.6,
+        },
+      };
+    });
+
+    setSolarPolygons(polygons);
+  }, [buildingInsights, dataLayers]);
+
+
+  useEffect(() => {
+    if (dataLayers) {
+      drawSunlightPolygons();
+    }
+  }, [dataLayers, drawSunlightPolygons]);
+
+
+  const generateHeatmapPoints = (geoTiffData) => {
+    const { width, height, rasters, bounds } = geoTiffData;
+    const raster = rasters[0]; // assuming 1 band for flux
+    const heatmapPoints = [];
+
+    // for (let y = 0; y < height; y++) {
+    //   for (let x = 0; x < width; x++) {
+    //     const value = raster[y * width + x];
+    //     const lat = bounds.north - ((bounds.north - bounds.south) * y / height);
+    //     const lng = bounds.west + ((bounds.east - bounds.west) * x / width);
+    //     heatmapPoints.push({
+    //       location: new window.google.maps.LatLng(lat, lng),
+    //       weight: value
+    //     });
+    //   }
+    // }
+    return heatmapPoints;
+  };
+
+
   useEffect(() => {
     if (buildingInsights) {
       drawPolygons();
       yearlyEnergyConsumption();
-      const heatmapPoints = generateHeatmapData();
-      setHeatmapData(heatmapPoints);
+      console.log("dataLayers", dataLayers)
+      if (dataLayers) {
+        const fetchGeoTIFF = async () => {
+          try {
+            const result = await downloadGeoTIFF();
+            const heatPoints = generateHeatmapPoints(result);
+            setHeatmapData(heatPoints);
+
+            console.log("Resolved GeoTIFF data:", result);
+            // You can now use `result` to set state, update UI, etc.
+          } catch (error) {
+            console.error("Error downloading GeoTIFF:", error);
+          }
+        };
+
+        fetchGeoTIFF();
+      }
     }
 
   }, [buildingInsights, drawPolygons]);
+
+
+
 
   const yearlyEnergyConsumption = (newPanelCapacityWatts) => {
     if (newPanelCapacityWatts == undefined) {
@@ -181,6 +305,44 @@ export default function Final() {
     let val = Number(event.target.value);
     setPanelRange(val);
   }
+
+
+
+  // const drawSunlightPolygons = useCallback(() => {
+  //   if (!window.google || !dataLayers) return;
+
+  //   const geometryLibrary = window.google.maps.geometry;
+  //   const sunSegments = dataLayers?.solarRoofSegments || []; // adjust key based on actual response
+
+  //   // Flux value color range: light yellow to deep yellow
+  //   const getFluxColor = (flux) => {
+  //     const maxFlux = 1200; // define based on your dataset max
+  //     const minFlux = 600;  // define based on your dataset min
+  //     const norm = normalize(flux, maxFlux, minFlux);
+  //     const intensity = Math.round(200 + 55 * norm); // from RGB(255, 255, 200) to RGB(255, 255, 0)
+  //     return `rgb(255, 255, ${255 - intensity})`;
+  //   };
+
+  //   const polygons = sunSegments.map((segment, idx) => ({
+  //     path: segment.boundingBox,
+  //     options: {
+  //       strokeColor: '#FFD700',
+  //       strokeOpacity: 0.3,
+  //       strokeWeight: 1,
+  //       fillColor: getFluxColor(segment.solarFluxWPerM2),
+  //       fillOpacity: 0.6,
+  //     }
+  //   }));
+
+  //   setSolarPolygons(polygons); // Or use another state like setSunlightPolygons
+  // }, [dataLayers]);
+
+  useEffect(() => {
+    if (dataLayers) {
+      drawSunlightPolygons();
+    }
+  }, [dataLayers, drawSunlightPolygons]);
+
 
   const toggleSection = (section) => {
     if (openSection === section) {
@@ -212,6 +374,8 @@ export default function Final() {
     }
   };
 
+
+
   return (
     <>
       <section className="container-fluid p-0">
@@ -226,47 +390,18 @@ export default function Final() {
                 disableDefaultUI: true,
               }}
             >
-
-              {heatmapData.length > 0 && (
-                <>
-
-                  {/* <HeatmapLayer
-                  data={heatmapData}
-                  options={{
-                    radius: 40,  // Adjust for smoothness
-                    opacity: 0.7,
-                    gradient: [
-                      "rgba(255, 255, 0, 0)",
-                      "rgba(255, 255, 0, 0.25)",
-                      "rgba(255, 255, 0, 0.5)",
-                      "rgba(255, 255, 0, 0.75)",
-                      "rgba(255, 255, 0, 1)"
-                    ]
-                  }}
-                /> */}
-                  {showHeatmap == true && (
-                    <HeatmapLayer
-                      data={heatmapData}
-                      options={{
-                        radius: 40,
-                        opacity: 0.7,
-                        gradient: [
-                          "rgba(255, 255, 0, 0)",
-                          "rgba(255, 255, 0, 0.25)",
-                          "rgba(255, 255, 0, 0.5)",
-                          "rgba(255, 255, 0, 0.75)",
-                          "rgba(255, 255, 0, 1)"
-                        ]
-                      }}
-                    />
-                  )}
-                </>
-
-
-              )}
               {solarPolygons.map((poly, index) => (
                 <Polygon key={index} paths={poly.path} options={poly.options} />
               ))}
+              {
+                showHeatmap && (
+                  <>
+                    <HeatmapLayer
+                      data={heatmapData}
+                    />
+                  </>
+                )
+              }
 
             </GoogleMap>
             {showProfileCard && (
@@ -446,6 +581,7 @@ export default function Final() {
                             <label htmlFor="toggle" style={{ marginLeft: '5px' }}>
                               Heat Map{" "}
                             </label>
+
                           </div>
                         </div>
                       </div>
