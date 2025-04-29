@@ -7,16 +7,18 @@ import EstimatedBill from "./pages/Estimated/EstimatedBill";
 import FinalResult from "./pages/FinalResult/FinalResult";
 import Final from "./pages/FinalResult/Final";
 import FinalPurposal from "./pages/FinalPurposal/FinalPurposal";
+import DataLayers from "./pages/FinalResult/DataLayers";
 
 
 function App() {
   return (
     <Router>
-      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAP_API_KEY} 
-      libraries={['places','geometry','visualization']}>
+      {/* <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAP_API_KEY} 
+      libraries={['places','geometry','visualization']}> */}
         <div className="App">
           <Routes>
             <Route path="/" element={<Estimated />} />
+            <Route path="/map" element={ <DataLayers /> } />
             <Route path="/home-address" element={<EstimatedAddress />} />
             <Route path="/estimatedbill" element={<EstimatedBill />} />
             <Route path="/finalresult" element={<FinalResult />} />
@@ -24,7 +26,7 @@ function App() {
             <Route path="/finalpurposal" element={<FinalPurposal />} />
           </Routes>
         </div>
-      </LoadScript>
+      {/* </LoadScript> */}
     </Router>
   );
 }

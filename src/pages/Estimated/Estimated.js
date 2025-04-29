@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import Autocomplete from 'react-google-autocomplete';
 import { AppContext } from '../../context/Context';
 
+
 export default function Estimated() {
+    const google = window.google;
     const mapRef = useRef(null);
     const navigate = useNavigate();
     const {
@@ -52,6 +54,7 @@ export default function Estimated() {
 
     const fetchBuildingInsights = async (locationData) => {
         try {
+            console.log("locationData",locationData)
             const insights = await findClosestBuilding(locationData, apiKey);
             if (insights) {
                 setBuildingInsights(insights);
@@ -66,17 +69,19 @@ export default function Estimated() {
     };
 
     const findDataLayers = async (location, insights) => {
-        // const center = insights.center;
-        // const ne = insights.boundingBox.ne;
-        // const sw = insights.boundingBox.sw;
-        // const diameter = geometryLibrary.spherical.computeDistanceBetween(
-        //     new google.maps.LatLng(ne.latitude, ne.longitude),
-        //     new google.maps.LatLng(sw.latitude, sw.longitude),
-        // );
-        const radius = 42;
+        const center = insights.center;
+        const ne = insights.boundingBox.ne;
+        const sw = insights.boundingBox.sw;
+
+        const diameter = google.maps.geometry.spherical.computeDistanceBetween(
+            new google.maps.LatLng(ne.latitude, ne.longitude),
+            new google.maps.LatLng(sw.latitude, sw.longitude),
+        );
+
+        const radius = diameter / 2;
         const args = {
-            'location.latitude': location.geo[0].toFixed(5),
-            'location.longitude': location.geo[1].toFixed(5),
+            'location.latitude': center.latitude.toFixed(5),
+            'location.longitude': center.longitude.toFixed(5),
             radius_meters: radius,
             required_quality: 'LOW',
         };

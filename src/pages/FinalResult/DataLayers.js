@@ -1,327 +1,248 @@
-import React, { useState, useContext, useEffect, useCallback } from "react";
-import { useNavigate } from 'react-router-dom';
-import * as geotiff from 'geotiff';
-import * as geokeysToProj4 from 'geotiff-geokeys-to-proj4';
-import proj4 from 'proj4';
+import { useEffect, useState, useContext, useRef, useCallback } from 'react';
+import { Loader } from '@googlemaps/js-api-loader';
+
+import { findClosestBuilding, getDataLayerUrls } from './Solar';
+import { createPalette, normalize, rgbToColor } from './Visualize';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { GoogleMap, Polygon, useJsApiLoader, HeatmapLayer } from '@react-google-maps/api';
+import { panelsPalette } from './Colors';
 import { AppContext } from '../../context/Context';
+import { getLayer } from './Layer';
+import { findSolarConfig } from './Utils';
 
-export default function Final() {
-  const panelsPalette = ['E8EAF6', '1A237E'];
-  const { data, completeAddress, buildingInsights, dataLayers } = useContext(AppContext);
-  const [panelRange, setPanelRange] = useState();
+const GOOGLE_MAPS_API_KEY = "AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg";
+
+// const completeAddress = {
+//   geo: [38.87805, -94.30454],
+//   country: 'United States',
+//   state: 'Missouri',
+//   city: "Lee's Summit",
+//   postalCode: '64086',
+//   street: 'Smart Road',
+//   streetNumber: '13118',
+// };
+
+export default function DataLayers() {
+  const mapRef = useRef(null);
+  const overlaysRef = useRef([]);
+
+  const [map, setMap] = useState(null);
+  const {completeAddress } = useContext(AppContext);
+
+  const [libraries, setLibraries] = useState({});
+  const [layerId, setLayerId] = useState('annualFlux');
+  const [layer, setLayer] = useState(null);
+  const [solarPanels, setSolarPanels] = useState([]);
   const [openSection, setOpenSection] = useState(null);
-  const [showHeatmap, setShowHeatmap] = useState(false);
   const [imageSrc, setImageSrc] = useState("assets/img/solar_api.png");
-  const [showProfileCard, setShowProfileCard] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(true);
   const [showSolarCard, setShowSolarCard] = useState(false);
-  const [showSolarPotential, setSolarPotential] = useState(false);
-  const [solarPolygons, setSolarPolygons] = useState([]);
+  const [panelCapacity, setPanelCapacity] = useState();
   const [showChart, setShowChart] = useState(false);
-  const [roofSegments, setRoofSegments] = useState([]);
-  const [yearlyEngery, setYearlyEngery] = useState();
-  const [heatmapData, setHeatmapData] = useState([]);
-  const [panelCapacity, setPanelCapacity] = useState(buildingInsights?.solarPotential.panelCapacityWatts);
-  const [polygons, setPolygons] = useState([]);
-  const [center, setCenter] = useState({
-    lat: parseFloat(completeAddress["geo"][0].toFixed(5)),
-    lng: parseFloat(completeAddress["geo"][1].toFixed(5)),
-  });
+  const [showSolarPotential, setSolarPotential] = useState(false);
+  const [showRoofOnly, setShowRoofOnly] = useState(false);
+  const [panelConfig, setPanelConfig] = useState(undefined);
 
+  const [monthlyAverageEnergyBillInput] = useState(300);
+  const [panelCapacityWattsInput] = useState(250);
+  const [energyCostPerKwhInput] = useState(0.31);
+  const [dcToAcDerateInput] = useState(0.85);
+  const [configId, setConfigId] = useState(undefined);
+  const [buildingInsights, setBuildingInsights] = useState();
+  const [panelRange, setPanelRange] = useState();
 
-  const downloadGeoTIFF = async () => {
-    const apiKey = "AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg";
-    const url = dataLayers.rgbUrl;
-    console.log(`Downloading data layer: ${url}`);
+  const yearlyKwhEnergyConsumption = (monthlyAverageEnergyBillInput / energyCostPerKwhInput) * 12;
 
-    const solarUrl = url.includes('solar.googleapis.com') ? url + `&key=${apiKey}` : url;
-    const response = await fetch(solarUrl);
-    console.log("response", response.body)
-    if (response.status !== 200) {
-      const error = await response.json();
-      console.error(`downloadGeoTIFF failed: ${url}\n`, error);
-      throw error;
+  const clearOverlays = useCallback(() => {
+    overlaysRef.current.forEach(overlay => overlay.setMap(null));
+    overlaysRef.current = [];
+  }, []);
+
+  // Initialize Map and Libraries
+  useEffect(() => {
+    async function initialize() {
+      const loader = new Loader({
+        apiKey: GOOGLE_MAPS_API_KEY,
+        version: 'weekly',
+      });
+
+      const [geometry, maps, places] = await Promise.all([
+        loader.importLibrary('geometry'),
+        loader.importLibrary('maps'),
+        loader.importLibrary('places'),
+      ]);
+
+      const mapInstance = new maps.Map(mapRef.current, {
+        center: { lat: completeAddress?.geo[0], lng: completeAddress?.geo[1] },
+        zoom: 20,
+        tilt: 0,
+        mapTypeId: 'satellite',
+        mapTypeControl: false,
+        fullscreenControl: false,
+        rotateControl: false,
+        streetViewControl: false,
+        zoomControl: true,
+      });
+
+      setLibraries({ geometry, maps, places });
+      setMap(mapInstance);
+
+      await loadBuildingInsights(geometry, mapInstance);
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const tiff = await geotiff.fromArrayBuffer(arrayBuffer);
-    const image = await tiff.getImage();
-    const rasters = await image.readRasters();
+    initialize();
+  }, []);
 
-    const geoKeys = image.getGeoKeys();
-    const projObj = geokeysToProj4.toProj4(geoKeys);
-    const projection = proj4(projObj.proj4, 'WGS84');
-    const box = image.getBoundingBox();
-    const sw = projection.forward({
-      x: box[0] * projObj.coordinatesConversionParameters.x,
-      y: box[1] * projObj.coordinatesConversionParameters.y,
-    });
-    const ne = projection.forward({
-      x: box[2] * projObj.coordinatesConversionParameters.x,
-      y: box[3] * projObj.coordinatesConversionParameters.y,
-    });
+  // Load Building Insights and Solar Panels
+  const loadBuildingInsights = async (geometry, mapInstance) => {
+    const buildingInsights = await findClosestBuilding(completeAddress, GOOGLE_MAPS_API_KEY);
+    setBuildingInsights(buildingInsights)
+    setPanelCapacity(buildingInsights?.solarPotential.panelCapacityWatts)
 
-    return {
-      width: rasters.width,
-      height: rasters.height,
-      rasters: [...Array(rasters.length).keys()].map((i) =>
-        Array.from(rasters[i])
-      ),
-      bounds: {
-        north: ne.y,
-        south: sw.y,
-        east: ne.x,
-        west: sw.x,
-      },
-    };
-  }
-
-  const clamp = (x, min, max) => Math.min(Math.max(x, min), max);
-  const normalize = (x, max = 1, min = 0) => clamp((x - min) / (max - min), 0, 1);
-  const lerp = (x, y, t) => x + t * (y - x);
-
-  const colorToRGB = (color) => {
-    const hex = color.startsWith('#') ? color.slice(1) : color;
-    return {
-      r: parseInt(hex.substring(0, 2), 16),
-      g: parseInt(hex.substring(2, 4), 16),
-      b: parseInt(hex.substring(4, 6), 16),
-    };
-  };
+    if (!buildingInsights) return;
 
 
-  const rgbToColor = ({ r, g, b }) => {
-    const f = (x) => {
-      const hex = Math.round(x).toString(16);
-      return hex.length === 1 ? `0${hex}` : hex;
-    };
-    return `#${f(r)}${f(g)}${f(b)}`;
-  };
 
-  const createPalette = (hexColors) => {
-    const rgb = hexColors.map(colorToRGB);
-    const size = 256;
-    const step = (rgb.length - 1) / (size - 1);
-    return Array(size).fill(0).map((_, i) => {
-      const index = i * step;
-      const lower = Math.floor(index);
-      const upper = Math.ceil(index);
-      return {
-        r: lerp(rgb[lower].r, rgb[upper].r, index - lower),
-        g: lerp(rgb[lower].g, rgb[upper].g, index - lower),
-        b: lerp(rgb[lower].b, rgb[upper].b, index - lower),
-      };
-    });
-  };
+    const defaultPanelCapacity = buildingInsights.solarPotential.panelCapacityWatts;
+    const panelCapacityRatio = panelCapacityWattsInput / defaultPanelCapacity;
 
+    const foundConfigId = findSolarConfig(
+      buildingInsights.solarPotential.solarPanelConfigs,
+      yearlyKwhEnergyConsumption,
+      panelCapacityRatio,
+      dcToAcDerateInput
+    );
+    await renderSolarPanels(geometry, buildingInsights, mapInstance, foundConfigId);
+    setConfigId(foundConfigId);
 
-  const handleChange = (event) => {
-    const newPanelCapacity = Number(event.target.value);
-    setPanelCapacity(newPanelCapacity);
-
-    yearlyEnergyConsumption(newPanelCapacity);
-  };
-
-  const handleChangeHeatMap = (e) => {
-    const val = e.target.checked;
-    setShowHeatmap(val);
-  };
-
-  const findPanelsCount = (yearlymax) => {
-    let config = null;
-    const solarPanelConfigs = buildingInsights?.solarPotential?.solarPanelConfigs;
-    for (let i = 0; i < solarPanelConfigs?.length; i++) {
-      config = solarPanelConfigs[i];
-      if (config?.yearlyEnergyDcKwh >= yearlymax) { return config?.panelsCount; }
+    if (foundConfigId !== undefined) {
+      setPanelConfig(buildingInsights.solarPotential.solarPanelConfigs[foundConfigId]);
     }
-  }
+  };
 
-  const drawPolygons = useCallback(() => {
-    if (!window.google || !buildingInsights) return;
+  const renderSolarPanels = async (geometry, buildingInsights, mapInstance, id) => {
+    if (!geometry?.spherical) {
+      console.error("Geometry library is missing.");
+      return;
+    }
 
-    const geometryLibrary = window.google.maps.geometry;
-    const panelData = buildingInsights?.solarPotential?.solarPanels || [];
-    const segmentStats = buildingInsights?.solarPotential?.roofSegmentStats || [];
+    console.log("id", id)
 
+    const solarPotential = buildingInsights.solarPotential;
     const palette = createPalette(panelsPalette).map(rgbToColor);
-    const maxEnergy = panelData[0]?.yearlyEnergyDcKwh || 1;
-    const minEnergy = panelData[panelData.length - 1]?.yearlyEnergyDcKwh || 0;
 
-    const panelWidth = buildingInsights?.solarPotential?.panelWidthMeters / 2;
-    const panelHeight = buildingInsights?.solarPotential?.panelHeightMeters / 2;
+    const minEnergy = solarPotential.solarPanels.slice(-1)[0].yearlyEnergyDcKwh;
+    const maxEnergy = solarPotential.solarPanels[0].yearlyEnergyDcKwh;
 
-    const polygons = panelData.slice(0, panelRange).map(panel => {
+    // const PANEL_COUNT = id;
+    console.log("configId", configId)
+    let panelCountToRender = panelRange ?? panelConfig?.panelCount ?? id;
+    let panelsToRender = solarPotential.solarPanels.slice(0, panelCountToRender);
+
+    // let panelsToRender = solarPotential.solarPanels.slice(0, id);
+
+    const panels = panelsToRender.map(panel => {
+      const [w, h] = [solarPotential.panelWidthMeters / 2, solarPotential.panelHeightMeters / 2];
+      const points = [
+        { x: +w, y: +h },
+        { x: +w, y: -h },
+        { x: -w, y: -h },
+        { x: -w, y: +h },
+        { x: +w, y: +h },
+      ];
       const orientation = panel.orientation === 'PORTRAIT' ? 90 : 0;
-      const azimuth = segmentStats[panel.segmentIndex]?.azimuthDegrees || 0;
+      const azimuth = solarPotential.roofSegmentStats[panel.segmentIndex].azimuthDegrees;
       const colorIndex = Math.round(normalize(panel.yearlyEnergyDcKwh, maxEnergy, minEnergy) * 255);
 
-      const corners = [
-        { x: +panelWidth, y: +panelHeight },
-        { x: +panelWidth, y: -panelHeight },
-        { x: -panelWidth, y: -panelHeight },
-        { x: -panelWidth, y: +panelHeight },
-      ];
-
-      const path = corners.map(({ x, y }) =>
-        geometryLibrary.spherical.computeOffset(
+      const panelCoords = points.map(({ x, y }) =>
+        geometry.spherical.computeOffset(
           { lat: panel.center.latitude, lng: panel.center.longitude },
           Math.sqrt(x * x + y * y),
           Math.atan2(y, x) * (180 / Math.PI) + orientation + azimuth,
         )
       );
 
-      return {
-        path,
-        options: {
-          strokeColor: '#B0BEC5',
-          strokeOpacity: 0.9,
-          strokeWeight: 1,
-          fillColor: palette[colorIndex],
-          fillOpacity: 0.9,
+      return new window.google.maps.Polygon({
+        paths: panelCoords,
+        strokeColor: '#B0BEC5',
+        strokeOpacity: 0.9,
+        strokeWeight: 1,
+        fillColor: palette[colorIndex],
+        fillOpacity: 0.9,
+      });
+    });
+    // Clear existing solar panels
+    solarPanels.forEach(panel => panel.setMap(null));
+    setSolarPanels([]);
+
+    panels.forEach(panel => panel.setMap(mapInstance));
+    setSolarPanels(panels);
+  };
+
+  // Handle Layer Changes
+  useEffect(() => {
+    if (!map) return;
+
+    async function fetchLayer() {
+      try {
+        clearOverlays();
+        setLayer(null);
+
+        setShowRoofOnly(['annualFlux', 'monthlyFlux', 'hourlyShade'].includes(layerId));
+        map.setMapTypeId(layerId === 'rgb' ? 'roadmap' : 'satellite');
+
+        if (layerId === 'none') return;
+
+        const buildingInsights = await findClosestBuilding(completeAddress, GOOGLE_MAPS_API_KEY);
+        const center = buildingInsights?.center;
+        const ne = buildingInsights.boundingBox.ne;
+        const sw = buildingInsights.boundingBox.sw;
+        const diameter = libraries.geometry.spherical.computeDistanceBetween(
+          { lat: ne.latitude, lng: ne.longitude },
+          { lat: sw.latitude, lng: sw.longitude }
+        );
+
+
+        console.log("diameter", diameter)
+        const radius = Math.ceil(diameter / 2);
+        // const radius = 42;
+        console.log("radius", radius)
+
+        if (center && Array.isArray(center)) {
+          map.setCenter({ lat: center[0], lng: center[1] });
         }
-      };
-    });
 
-    setSolarPolygons(polygons);
-  }, [panelRange, buildingInsights]);
+        const response = await getDataLayerUrls(center, radius, GOOGLE_MAPS_API_KEY);
+        const loadedLayer = await getLayer(layerId, response, GOOGLE_MAPS_API_KEY);
 
-  const drawSunlightPolygons = useCallback(() => {
-    if (!window.google || !buildingInsights) return;
-    const sunSegments = buildingInsights?.solarPotential?.roofSegmentStats || [];
-  
-    const getFluxColor = (flux) => {
-      const maxFlux = 1200;
-      const minFlux = 600;
-      const norm = normalize(flux, maxFlux, minFlux);
-      const intensity = Math.round(200 + 55 * norm);
-      return `rgb(255, 255, ${255 - intensity})`;
-    };
-  
-    const polygons = sunSegments.map((segment) => {
-      const boundingBox = segment.boundingBox;
-      
-      const sw = boundingBox.sw;
-      const ne = boundingBox.ne;
-      const se = { latitude: sw.latitude, longitude: ne.longitude };
-      const nw = { latitude: ne.latitude, longitude: sw.longitude };
-  
-      // Make a rectangle path: SW -> SE -> NE -> NW -> back to SW
-      const path = [
-        { lat: sw.latitude, lng: sw.longitude },
-        { lat: se.latitude, lng: se.longitude },
-        { lat: ne.latitude, lng: ne.longitude },
-        { lat: nw.latitude, lng: nw.longitude },
-        { lat: sw.latitude, lng: sw.longitude },
-      ];
-  
-      return {
-        path,
-        options: {
-          strokeColor: '#FFD700',
-          strokeOpacity: 0.8,
-          strokeWeight: 1,
-          fillColor: getFluxColor(segment.stats.sunshineQuantiles?.[5] || 0),
-          fillOpacity: 0.6,
-          zIndex: 3,
-        },
-      };
-    });
-  
-    setSolarPolygons(polygons);
-  }, [buildingInsights]);
-  
-  useEffect(() => {
-    // if (dataLayers) {
-      drawSunlightPolygons();
-    // }
-  }, [dataLayers, drawSunlightPolygons]);
-
-  useEffect(() => {
-    if (buildingInsights) {
-      drawPolygons();
-      yearlyEnergyConsumption();
-      console.log("dataLayers", dataLayers)
-      if (dataLayers) {
-        const fetchGeoTIFF = async () => {
-          try {
-            const result = await downloadGeoTIFF();
-            console.log("Resolved GeoTIFF data:", result);
-            
-          } catch (error) {
-            console.error("Error downloading GeoTIFF:", error);
-          }
-        };
-        fetchGeoTIFF();
+        setLayer(loadedLayer);
+      } catch (error) {
+        console.error('❌ Data layer fetch error:', error);
       }
     }
 
-  }, [buildingInsights, drawPolygons]);
+    fetchLayer();
+  }, [map, layerId, clearOverlays]);
 
-  const yearlyEnergyConsumption = (newPanelCapacityWatts) => {
-    if (newPanelCapacityWatts == undefined) {
-      newPanelCapacityWatts = buildingInsights?.solarPotential.panelCapacityWatts;
-    }
-    let monthlyAverageEnergyBillInput = 300;
-    // let panelCapacityWattsInput = 250;
-    let energyCostPerKwhInput = 0.31;
-    let dcToAcDerateInput = 0.85;
-    let yearlyKwhEnergyConsumption = (monthlyAverageEnergyBillInput / energyCostPerKwhInput) * 12;
+  // Render Layer Overlays
+  useEffect(() => {
+    if (!map || !layer) return;
 
-    // const defaultPanelCapacity = newPanelCapacityWatts / buildingInsights.solarPotential.panelCapacityWatts;
-    const panelCapacityRatio = newPanelCapacityWatts / buildingInsights.solarPotential.panelCapacityWatts;
-    const haji = panelCapacityRatio * dcToAcDerateInput;
-    const yearlymax = yearlyKwhEnergyConsumption / haji;
-    const fixedValue = yearlymax.toFixed(2);
-    setYearlyEngery(fixedValue)
-    const panelCount = findPanelsCount(yearlymax);
-    if (panelCount) {
-      setPanelRange(panelCount);
-    }
-  }
+    clearOverlays();
+
+    const bounds = layer.bounds;
+    const newOverlays = layer.render(showRoofOnly, 0, 0).map(canvas => {
+      return new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
+    });
+
+    newOverlays.forEach(overlay => overlay.setMap(map));
+    overlaysRef.current = newOverlays;
+  }, [map, layer, showRoofOnly, clearOverlays]);
 
   const updateRangeFunc = (event) => {
     let val = Number(event.target.value);
+    setConfigId(val)
     setPanelRange(val);
   }
-
-
-
-  // const drawSunlightPolygons = useCallback(() => {
-  //   if (!window.google || !dataLayers) return;
-
-  //   const geometryLibrary = window.google.maps.geometry;
-  //   const sunSegments = dataLayers?.solarRoofSegments || []; // adjust key based on actual response
-
-  //   // Flux value color range: light yellow to deep yellow
-  //   const getFluxColor = (flux) => {
-  //     const maxFlux = 1200; // define based on your dataset max
-  //     const minFlux = 600;  // define based on your dataset min
-  //     const norm = normalize(flux, maxFlux, minFlux);
-  //     const intensity = Math.round(200 + 55 * norm); // from RGB(255, 255, 200) to RGB(255, 255, 0)
-  //     return `rgb(255, 255, ${255 - intensity})`;
-  //   };
-
-  //   const polygons = sunSegments.map((segment, idx) => ({
-  //     path: segment.boundingBox,
-  //     options: {
-  //       strokeColor: '#FFD700',
-  //       strokeOpacity: 0.3,
-  //       strokeWeight: 1,
-  //       fillColor: getFluxColor(segment.solarFluxWPerM2),
-  //       fillOpacity: 0.6,
-  //     }
-  //   }));
-
-  //   setSolarPolygons(polygons); // Or use another state like setSunlightPolygons
-  // }, [dataLayers]);
-
-  useEffect(() => {
-    if (dataLayers) {
-      drawSunlightPolygons();
-    }
-  }, [dataLayers, drawSunlightPolygons]);
-
 
   const toggleSection = (section) => {
     if (openSection === section) {
@@ -353,34 +274,39 @@ export default function Final() {
     }
   };
 
+  const handleChange = (event) => {
+    const newPanelCapacity = Number(event.target.value);
+    setPanelCapacity(newPanelCapacity);
+
+    // yearlyEnergyConsumption(newPanelCapacity);
+  };
+
+  // useEffect(() => {
+  //   if (panelRange !== undefined && buildingInsights && libraries.geometry && map) {
+  //     clearOverlays();
+  //     renderSolarPanels(libraries.geometry, buildingInsights, map, panelRange);
+  //   }
+  // }, [panelRange]);
+
+  useEffect(() => {
+    if (panelRange !== undefined && buildingInsights && libraries.geometry && map) {
+      // Clear existing solar panels only
+      solarPanels.forEach(panel => panel.setMap(null));
+      setSolarPanels([]);
+
+      renderSolarPanels(libraries.geometry, buildingInsights, map, panelRange);
+    }
+  }, [panelRange]);
+
+
+
+  {/* <div ref={mapRef} id="map" style={{ width: "100vw", height: "100vh" }} /> */ }
   return (
     <>
       <section className="container-fluid p-0">
         <div className="row g-0">
           <div className="col-md-8 position-relative">
-            <GoogleMap
-              mapContainerStyle={{ height: '110vh', width: '100%' }}
-              center={center}
-              zoom={21}
-              options={{
-                mapTypeId: 'satellite',
-                disableDefaultUI: true,
-              }}
-            >
-              {solarPolygons.map((poly, index) => (
-                <Polygon key={index} paths={poly.path} options={poly.options} />
-              ))}
-              {
-                showHeatmap && (
-                  <>
-                    <HeatmapLayer
-                      data={heatmapData}
-                    />
-                  </>
-                )
-              }
-
-            </GoogleMap>
+            <div ref={mapRef} id="map" style={{ height: "100vh" }} />
             {showProfileCard && (
               <div className="insights-card position-absolute" style={{ top: "20px", left: "20px", zIndex: 1000 }}>
                 <div className="card-header">
@@ -405,13 +331,13 @@ export default function Final() {
                   </div>
                   <div className="data-row">
                     <span>Max panel count</span>
-                    <span className="value">{buildingInsights.solarPotential.maxArrayPanelsCount || 'N/A'}</span>
+                    <span className="value">{buildingInsights?.solarPotential?.maxArrayPanelsCount || 'N/A'}</span>
                   </div>
                   <div className="data-row">
                     <span>CO₂ savings</span>
                     <span className="value">
-                      {buildingInsights.solarPotential.carbonOffsetFactorKgPerMwh
-                        ? `${buildingInsights.solarPotential.carbonOffsetFactorKgPerMwh.toFixed(1)} Kg/MWh`
+                      {buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh
+                        ? `${buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh.toFixed(1)} Kg/MWh`
                         : 'N/A'}
                     </span>
                   </div>
@@ -463,7 +389,7 @@ export default function Final() {
               <div className="chart-container position-absolute" style={{ top: "250px", left: "20px", zIndex: 1000 }}>
                 <h4 className="chart-title">Cost analysis for 20 years</h4>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={data}>
+                  <LineChart>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year" />
                     <YAxis />
@@ -495,7 +421,7 @@ export default function Final() {
             )}
           </div>
 
-          <div className="col-md-4 d-flex align-items-center" style={{ background: "#f8f8f8", height: "auto", marginTop: "-3%" }}>
+          <div className="col-md-4 d-flex align-items-start" style={{ background: "#f8f8f8", height: "100vh", overflowY: "auto" }}>
             <div className="container">
 
               <p className="text-muted text-center mt-4">
@@ -511,7 +437,7 @@ export default function Final() {
                   >
                     <span>
                       <i className="fas fa-home icon text-warning me-2"></i> <b>Building Insights endpoint</b>
-                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>Yearly energy: {yearlyEngery && yearlyEngery} Wh </p>
+                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>Yearly energy: {buildingInsights?.solarPotential?.maxSunshineHoursPerYear} Wh </p>
                     </span>
                     <i className={` fas fa-chevron-${openSection === "section1" ? "up" : "down"}`}></i>
                   </div>
@@ -522,16 +448,18 @@ export default function Final() {
                           <p><strong>Panel count</strong> </p>
                         </div>
                         <div className="col-6 text-end">
-                          <p>{panelRange} Panels</p>
+                          <p>{configId} Panels</p>
                         </div>
                       </div>
+                     
                       <input
                         type="range"
-                        id="panelRange"
+                        min="1"
                         max={buildingInsights?.solarPotential?.maxArrayPanelsCount}
-                        value={panelRange}
+                        value={configId}
                         onChange={updateRangeFunc}
                       />
+
 
                       <fieldset className="border p-2 rounded">
                         <legend className="fs-6 text-muted">Panel Capacity</legend>
@@ -542,12 +470,12 @@ export default function Final() {
                             value={panelCapacity}
                             onChange={handleChange}
                           />
-                          <span className="input-group-text">Watts</span>
+                          <span style={{ height: '54px' }} className="input-group-text">Watts</span>
                         </div>
                       </fieldset>
                       <div className="d-flex justify-content-between align-items-center mt-4">
                         <div className="content">
-                          <div className="checkbox-group">
+                          {/* <div className="checkbox-group">
                             <label className="toggle2">
                               <input
                                 type="checkbox"
@@ -559,7 +487,7 @@ export default function Final() {
                               Heat Map{" "}
                             </label>
 
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </div>
@@ -605,7 +533,7 @@ export default function Final() {
                 <div className="me-2">
                   <a
                     className="group-btn"
-                    data-bs-toggle="modal"
+
                   >
                     Show Proposal
                   </a>
@@ -613,7 +541,7 @@ export default function Final() {
                 <div>
                   <a
                     className="group-btn"
-                    data-bs-toggle="modal"
+
                   >
                     Contact Me
                   </a>

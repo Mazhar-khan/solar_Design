@@ -59,7 +59,7 @@ export default function EstimatedAddress() {
 
                                         <div className="mt-5">
                                             <a
-                                                onClick={() => navigate('/get-purposal')}
+                                                onClick={() => navigate('/map')}
                                                 className="button-element"
                                             >
                                                 That’s Right
