@@ -27,6 +27,7 @@ export default function DataLayers() {
 
   const [map, setMap] = useState(null);
   const {completeAddress } = useContext(AppContext);
+  const [yearlyEnergy, setYearlyEnergy] = useState(0);
 
   const [libraries, setLibraries] = useState({});
   const [layerId, setLayerId] = useState('annualFlux');
@@ -213,7 +214,8 @@ export default function DataLayers() {
 
         const response = await getDataLayerUrls(center, radius, GOOGLE_MAPS_API_KEY);
         const loadedLayer = await getLayer(layerId, response, GOOGLE_MAPS_API_KEY);
-
+        const defaultEnergy = buildingInsights.solarPotential.maxSunshineHoursPerYear;
+        setYearlyEnergy(defaultEnergy);
         setLayer(loadedLayer);
       } catch (error) {
         console.error('❌ Data layer fetch error:', error);
@@ -278,6 +280,14 @@ export default function DataLayers() {
     const newPanelCapacity = Number(event.target.value);
     setPanelCapacity(newPanelCapacity);
 
+    if (buildingInsights) {
+      // Assume yearlyEnergy is proportional to capacity
+      const defaultCapacity = buildingInsights.solarPotential.panelCapacityWatts;
+      const defaultEnergy = buildingInsights.solarPotential.maxSunshineHoursPerYear; // Or another energy metric you prefer
+  
+      const newYearlyEnergy = (newPanelCapacity / defaultCapacity) * defaultEnergy;
+      setYearlyEnergy(newYearlyEnergy);
+    }
     // yearlyEnergyConsumption(newPanelCapacity);
   };
 
@@ -437,7 +447,8 @@ export default function DataLayers() {
                   >
                     <span>
                       <i className="fas fa-home icon text-warning me-2"></i> <b>Building Insights endpoint</b>
-                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>Yearly energy: {buildingInsights?.solarPotential?.maxSunshineHoursPerYear} Wh </p>
+                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>
+                        Yearly energy: {Math.round(yearlyEnergy)} Wh </p>
                     </span>
                     <i className={` fas fa-chevron-${openSection === "section1" ? "up" : "down"}`}></i>
                   </div>
