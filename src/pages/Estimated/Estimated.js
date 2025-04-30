@@ -101,20 +101,45 @@ export default function Estimated() {
     }
 
     const findClosestBuilding = async (location, apiKey) => {
-        const args = {
-            'location.latitude': location.geo[0].toFixed(5),
-            'location.longitude': location.geo[1].toFixed(5),
-        };
-
-        const params = new URLSearchParams({ ...args, key: apiKey });
-        const response = await fetch(`https://solar.googleapis.com/v1/buildingInsights:findClosest?${params}`);
-        const content = await response.json();
-        if (response.status !== 200) {
-            console.error('findClosestBuilding\n', content);
-            throw content;
+        const qualities = ['HIGH', 'MEDIUM', 'LOW'];
+      
+        for (const quality of qualities) {
+          const query = `location.latitude=${location.geo[0].toFixed(5)}&location.longitude=${location.geo[1].toFixed(5)}&requiredQuality=${quality}&key=${apiKey}`;
+          console.log(`🔍 Trying buildingInsights with quality: ${quality}`, query);
+      
+          try {
+            const response = await fetch(`https://solar.googleapis.com/v1/buildingInsights:findClosest?${query}`);
+            const content = await response.json();
+      
+            if (response.status === 200) {
+              console.log(`✅ Success with quality: ${quality}`, content);
+              return content;
+            } else {
+              console.warn(`⚠️ Failed with quality: ${quality}`, content);
+            }
+          } catch (error) {
+            console.error(`❌ Error fetching with quality: ${quality}`, error);
+          }
         }
-        return content;
-    };
+      
+        throw new Error("Failed to retrieve building insights for all quality levels.");
+      }
+      
+    // const findClosestBuilding = async (location, apiKey) => {
+    //     const args = {
+    //         'location.latitude': location.geo[0].toFixed(5),
+    //         'location.longitude': location.geo[1].toFixed(5),
+    //     };
+
+    //     const params = new URLSearchParams({ ...args, key: apiKey });
+    //     const response = await fetch(`https://solar.googleapis.com/v1/buildingInsights:findClosest?${params}`);
+    //     const content = await response.json();
+    //     if (response.status !== 200) {
+    //         console.error('findClosestBuilding\n', content);
+    //         throw content;
+    //     }
+    //     return content;
+    // };
 
     const handleSubmit = () => {
         if (isAddressSelected) {

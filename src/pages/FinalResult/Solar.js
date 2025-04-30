@@ -5,25 +5,55 @@ import proj4 from 'proj4';
 
 
 export async function findClosestBuilding(location, apiKey) {
-    const args = {
-        'location.latitude': location["geo"][0].toFixed(5),
-        'location.longitude': location["geo"][1].toFixed(5),
-    };
-    console.log('GET buildingInsights\n', args);
-    const params = new URLSearchParams({ ...args, key: apiKey });
-    // https://developers.google.com/maps/documentation/solar/reference/rest/v1/buildingInsights/findClosest
-    return fetch(`https://solar.googleapis.com/v1/buildingInsights:findClosest?${params}`).then(
-        async (response) => {
-            const content = await response.json();
-            if (response.status != 200) {
-                console.error('findClosestBuilding\n', content);
-                throw content;
-            }
-            console.log('buildingInsightsResponse', content);
-            return content;
-        },
-    );
-}
+    const qualities = ['HIGH', 'MEDIUM', 'LOW'];
+  
+    for (const quality of qualities) {
+      const query = `location.latitude=${location.geo[0].toFixed(5)}&location.longitude=${location.geo[1].toFixed(5)}&requiredQuality=${quality}&key=${apiKey}`;
+  
+      console.log(`🔍 Trying buildingInsights with quality: ${quality}`, query);
+  
+      try {
+        const response = await fetch(`https://solar.googleapis.com/v1/buildingInsights:findClosest?${query}`);
+        const content = await response.json();
+  
+        if (response.status === 200) {
+          console.log(`✅ Success with quality: ${quality}`, content);
+          return content;
+        } else {
+          console.warn(`⚠️ Failed with quality: ${quality}`, content);
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching with quality: ${quality}`, error);
+      }
+    }
+  
+    throw new Error("Failed to retrieve building insights for all quality levels.");
+  }
+  
+  
+
+// export async function findClosestBuilding(location, apiKey) {
+//     const args = {
+//         'location.latitude': location["geo"][0].toFixed(5),
+//         'location.longitude': location["geo"][1].toFixed(5),
+//         'requiredQuality':'HIGH'
+//         //MEDIUM,LOW
+//     };
+//     console.log('GET buildingInsights\n', args);
+//     const params = new URLSearchParams({ ...args, key: apiKey });
+   
+//     return fetch(`https://solar.googleapis.com/v1/buildingInsights:findClosest?${params}`).then(
+//         async (response) => {
+//             const content = await response.json();
+//             if (response.status != 200) {
+//                 console.error('findClosestBuilding\n', content);
+//                 throw content;
+//             }
+//             console.log('buildingInsightsResponse', content);
+//             return content;
+//         },
+//     );
+// }
 
 export async function getDataLayerUrls( location, radiusMeters, apiKey) {
     const args = {

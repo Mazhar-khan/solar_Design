@@ -11,23 +11,17 @@ import { findSolarConfig } from './Utils';
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg";
 
-// const completeAddress = {
-//   geo: [38.87805, -94.30454],
-//   country: 'United States',
-//   state: 'Missouri',
-//   city: "Lee's Summit",
-//   postalCode: '64086',
-//   street: 'Smart Road',
-//   streetNumber: '13118',
-// };
-
 export default function DataLayers() {
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
 
   const [map, setMap] = useState(null);
-  const {completeAddress } = useContext(AppContext);
+  const { completeAddress } = useContext(AppContext);
   const [yearlyEnergy, setYearlyEnergy] = useState(0);
+
+  const [showSolarPanels, setShowSolarPanels] = useState(false);
+  const [showHeatMap, setShowHeatMap] = useState(true);
+
 
   const [libraries, setLibraries] = useState({});
   const [layerId, setLayerId] = useState('annualFlux');
@@ -175,7 +169,9 @@ export default function DataLayers() {
     solarPanels.forEach(panel => panel.setMap(null));
     setSolarPanels([]);
 
-    panels.forEach(panel => panel.setMap(mapInstance));
+    // panels.forEach(panel => panel.setMap(mapInstance));
+    panels.forEach(panel => panel.setMap(showSolarPanels ? mapInstance : null));
+
     setSolarPanels(panels);
   };
 
@@ -236,15 +232,30 @@ export default function DataLayers() {
       return new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
     });
 
-    newOverlays.forEach(overlay => overlay.setMap(map));
+    // newOverlays.forEach(overlay => overlay.setMap(map));
+    newOverlays.forEach(overlay => overlay.setMap(showHeatMap ? map : null));
+
     overlaysRef.current = newOverlays;
   }, [map, layer, showRoofOnly, clearOverlays]);
 
+  // const updateRangeFunc = (event) => {
+  //   let val = Number(event.target.value);
+  //   setConfigId(val)
+  //   setPanelRange(val);
+  //   // setYearlyEnergy(prev => prev + 1);
+  // }
+
   const updateRangeFunc = (event) => {
-    let val = Number(event.target.value);
-    setConfigId(val)
+    const val = Number(event.target.value);
+    setConfigId(val);
     setPanelRange(val);
-  }
+
+    if (buildingInsights && buildingInsights.solarPotential?.solarPanels) {
+      const panelsToRender = buildingInsights.solarPotential.solarPanels.slice(0, val);
+      const totalEnergy = panelsToRender.reduce((sum, panel) => sum + panel.yearlyEnergyDcKwh, 0);
+      setYearlyEnergy(totalEnergy);
+    }
+  };
 
   const toggleSection = (section) => {
     if (openSection === section) {
@@ -284,7 +295,7 @@ export default function DataLayers() {
       // Assume yearlyEnergy is proportional to capacity
       const defaultCapacity = buildingInsights.solarPotential.panelCapacityWatts;
       const defaultEnergy = buildingInsights.solarPotential.maxSunshineHoursPerYear; // Or another energy metric you prefer
-  
+
       const newYearlyEnergy = (newPanelCapacity / defaultCapacity) * defaultEnergy;
       setYearlyEnergy(newYearlyEnergy);
     }
@@ -308,7 +319,21 @@ export default function DataLayers() {
     }
   }, [panelRange]);
 
+  const toggleSolarPanels = () => {
+    setShowSolarPanels(prev => {
+      const newState = !prev;
+      solarPanels.forEach(panel => panel.setMap(newState ? map : null));
+      return newState;
+    });
+  };
 
+  const toggleHeatMap = () => {
+    setShowHeatMap(prev => {
+      const newState = !prev;
+      overlaysRef.current.forEach(overlay => overlay.setMap(newState ? map : null));
+      return newState;
+    });
+  };
 
   {/* <div ref={mapRef} id="map" style={{ width: "100vw", height: "100vh" }} /> */ }
   return (
@@ -462,7 +487,7 @@ export default function DataLayers() {
                           <p>{configId} Panels</p>
                         </div>
                       </div>
-                     
+
                       <input
                         type="range"
                         min="1"
@@ -486,19 +511,31 @@ export default function DataLayers() {
                       </fieldset>
                       <div className="d-flex justify-content-between align-items-center mt-4">
                         <div className="content">
-                          {/* <div className="checkbox-group">
-                            <label className="toggle2">
-                              <input
-                                type="checkbox"
-                                checked={showHeatmap}
-                                onChange={handleChangeHeatMap}
-                              />
-                              <i></i></label>
-                            <label htmlFor="toggle" style={{ marginLeft: '5px' }}>
-                              Heat Map{" "}
+                          <div>
+                            <label class="switch">
+                              <input type="checkbox" checked={showSolarPanels} value={showSolarPanels} onClick={() => toggleSolarPanels()} />
+                              <span class="slider round"></span>
                             </label>
+                            <span style={{ marginLeft: "10px" }}>
+                              Solar Panels
+                            </span>
+                          </div>
 
-                          </div> */}
+                          <div style={{ marginTop:'5px'}} >
+                            <label class="switch">
+                              <input type="checkbox" checked={showHeatMap} value={showHeatMap} onClick={() => toggleHeatMap()} />
+                              <span class="slider round"></span>
+                            </label>
+                            <span style={{ marginLeft: "10px" }}>
+                              Heat map
+                            </span>
+                          </div>
+                          {/* <button onClick={() => toggleSolarPanels()}>
+                            {showSolarPanels ? 'Hide Solar Panels' : 'Show Solar Panels'}
+                          </button> */}
+                          {/* <button onClick={() => toggleHeatMap()}>
+                            {showHeatMap ? 'Hide Heatmap' : 'Show Heatmap'}
+                          </button> */}
                         </div>
                       </div>
                     </div>
@@ -544,7 +581,6 @@ export default function DataLayers() {
                 <div className="me-2">
                   <a
                     className="group-btn"
-
                   >
                     Show Proposal
                   </a>
@@ -552,7 +588,6 @@ export default function DataLayers() {
                 <div>
                   <a
                     className="group-btn"
-
                   >
                     Contact Me
                   </a>
