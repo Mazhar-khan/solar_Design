@@ -36,6 +36,9 @@ export default function DataLayers() {
   const [showSolarPotential, setSolarPotential] = useState(false);
   const [showRoofOnly, setShowRoofOnly] = useState(false);
   const [panelConfig, setPanelConfig] = useState(undefined);
+  const [visitorName, setVisitorName] = useState('');
+  const [visitorEmail, setVisitorEmail] = useState('');
+  const [visitorPhone, setVisitorPhone] = useState('');
 
   const [monthlyAverageEnergyBillInput] = useState(300);
   const [panelCapacityWattsInput] = useState(250);
@@ -287,6 +290,16 @@ export default function DataLayers() {
     }
   };
 
+  const handleSubmitVisitorInfo = () => {
+    const data = {
+      name: visitorName,
+      email: visitorEmail,
+      phone: visitorPhone,
+    };
+    console.log("Visitor submitted info:", data);
+    // TODO: Send to server/API
+  };
+
   const handleChange = (event) => {
     const newPanelCapacity = Number(event.target.value);
     setPanelCapacity(newPanelCapacity);
@@ -343,56 +356,66 @@ export default function DataLayers() {
           <div className="col-md-8 position-relative">
             <div ref={mapRef} id="map" style={{ height: "100vh" }} />
             {showProfileCard && (
-              <div className="insights-card position-absolute" style={{ top: "20px", left: "20px", zIndex: 1000 }}>
-                <div className="card-header">
-                  <i className="fas fa-home home-icon"></i>
-                  <span className="title">Building Insights endpoint</span>
+              <>
+                <div className="insights-card position-absolute" style={{ top: "20px", left: "10px", zIndex: 1000 }}>
+                  <div className="card-header">
+                    <i className="fas fa-home home-icon"></i>
+                    <span className="title">Building Insights endpoint</span>
+                  </div>
+                  <hr />
+                  <div className="card-body">
+                    <div className="data-row">
+                      <span>Annual sunshine</span>
+                      <span className="value">
+                        {buildingInsights?.solarPotential?.maxSunshineHoursPerYear
+                          ? `${buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1)} hr`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="data-row">
+                      <span>Roof area</span>
+                      <span className="value">
+                        {buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2) || 'N/A'} m²
+                      </span>
+                    </div>
+                    <div className="data-row">
+                      <span>Max panel count</span>
+                      <span className="value">{buildingInsights?.solarPotential?.maxArrayPanelsCount || 'N/A'}</span>
+                    </div>
+                    <div className="data-row">
+                      <span>CO₂ savings</span>
+                      <span className="value">
+                        {buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh
+                          ? `${buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh.toFixed(1)} Kg/MWh`
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <hr />
-                <div className="card-body">
-                  <div className="data-row">
-                    <span>Annual sunshine</span>
-                    <span className="value">
-                      {buildingInsights?.solarPotential?.maxSunshineHoursPerYear
-                        ? `${buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1)} hr`
-                        : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="data-row">
-                    <span>Roof area</span>
-                    <span className="value">
-                      {buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2) || 'N/A'} m²
-                    </span>
-                  </div>
-                  <div className="data-row">
-                    <span>Max panel count</span>
-                    <span className="value">{buildingInsights?.solarPotential?.maxArrayPanelsCount || 'N/A'}</span>
-                  </div>
-                  <div className="data-row">
-                    <span>CO₂ savings</span>
-                    <span className="value">
-                      {buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh
-                        ? `${buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh.toFixed(1)} Kg/MWh`
-                        : 'N/A'}
-                    </span>
+                <div className='mt-4' >
+                  <div className="insights-card position-absolute" style={{ top: "250px", left: "10px", zIndex: 1000 }}>
+                    <div className="card-header">
+                      <i className="fas fa-layer-group icon"></i>
+                      <span className="title">Annual Flux</span>
+                    </div>
+                    <hr />
+                    <div className="card-body">
+                      <div className="data-row">
+                        <p style={{ textAlign: 'left' }}>
+                          The annual flux map (annual sunlight on roofs) of the region.
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{ marginRight: "10px" }} >Shaday</span>
+                        <div class="sun-gradient" style={{ flex: 1, height: '30px' }} ></div>
+                        <span style={{ marginLeft: '30px' }}>Sunny</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
-            {showSolarPotential && (
-              <div className="insights-card position-absolute" style={{ top: "20px", left: "20px", zIndex: 1000 }}>
-                <div className="card-header">
-                  <i className="fas fa-layer-group icon"></i>
-                  <span className="title">Data Layers endpoint</span>
-                </div>
-                <hr />
-                <div className="card-body">
-                  <div className="data-row">
-                    <p style={{ textAlign: 'center' }}>We’ve helped THOUSANDS of homeowners like you, switch to save money & save the environment.</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* 
             {showSolarCard && (
               <div className="solar-card position-absolute" style={{ top: "20px", left: "20px", zIndex: 1000 }}>
                 <div className="card-header">
@@ -419,8 +442,8 @@ export default function DataLayers() {
                   </div>
                 </div>
               </div>
-            )}
-            {showChart && (
+            )} */}
+            {/* {showChart && (
               <div className="chart-container position-absolute" style={{ top: "250px", left: "20px", zIndex: 1000 }}>
                 <h4 className="chart-title">Cost analysis for 20 years</h4>
                 <ResponsiveContainer width="100%" height={200}>
@@ -453,7 +476,7 @@ export default function DataLayers() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
 
           <div className="col-md-4 d-flex align-items-start" style={{ background: "#f8f8f8", height: "100vh", overflowY: "auto" }}>
@@ -473,7 +496,7 @@ export default function DataLayers() {
                     <span>
                       <i className="fas fa-home icon text-warning me-2"></i> <b>Building Insights endpoint</b>
                       <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>
-                        Yearly energy: {Math.round(yearlyEnergy)} Wh </p>
+                        Yearly energy: {Math.round(yearlyEnergy / 1000)} KWh </p>
                     </span>
                     <i className={` fas fa-chevron-${openSection === "section1" ? "up" : "down"}`}></i>
                   </div>
@@ -521,7 +544,7 @@ export default function DataLayers() {
                             </span>
                           </div>
 
-                          <div style={{ marginTop:'5px'}} >
+                          <div style={{ marginTop: '5px' }} >
                             <label class="switch">
                               <input type="checkbox" checked={showHeatMap} value={showHeatMap} onClick={() => toggleHeatMap()} />
                               <span class="slider round"></span>
@@ -541,8 +564,66 @@ export default function DataLayers() {
                     </div>
                   )}
                 </div>
-                <hr />
                 <div>
+                  <div
+                    className="section-title d-flex justify-content-between align-items-center"
+                    onClick={() => toggleSection("visitorInfo")}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span>
+                      <i className="fas fa-user icon text-warning me-2"></i> <b>Get a Free Solar Quote</b>
+                      <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>
+                        Help us reach out to you
+                      </p>
+                    </span>
+                    <i className={`fas fa-chevron-${openSection === "visitorInfo" ? "up" : "down"}`}></i>
+                  </div>
+
+                  {openSection === "visitorInfo" && (
+                    <div className="section-content ps-4 text-secondary">
+                      <div className="row">
+                        <div className="col-md-12 mb-3">
+                          <label className="form-label">Name</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={visitorName}
+                            onChange={(e) => setVisitorName(e.target.value)}
+                            placeholder="Enter your name"
+                          />
+                        </div>
+                        <div className="col-md-12 mb-3">
+                          <label className="form-label">Email</label>
+                          <input
+                            type="email"
+                            className="form-control"
+                            value={visitorEmail}
+                            onChange={(e) => setVisitorEmail(e.target.value)}
+                            placeholder="Enter your email"
+                          />
+                        </div>
+                        <div className="col-md-12 mb-3">
+                          <label className="form-label">Phone Number</label>
+                          <input
+                            type="tel"
+                            className="form-control"
+                            value={visitorPhone}
+                            onChange={(e) => setVisitorPhone(e.target.value)}
+                            placeholder="Enter your phone number"
+                          />
+                        </div>
+                        <div className="col-12 mt-3">
+                          <button className="btn btn-success" style={{ backgroundColor:'#ff9800', border:'none' }} onClick={handleSubmitVisitorInfo}>
+                          Show Proposal
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* <hr /> */}
+                {/* <div>
                   <div
                     className="section-title d-flex justify-content-between align-items-center"
                     onClick={() => toggleSection("section2")}
@@ -556,9 +637,9 @@ export default function DataLayers() {
                   {openSection === "section2" && (
                     <div className="section-content ps-4 text-secondary">Monthly sunshine</div>
                   )}
-                </div>
-                <hr />
-                <div>
+                </div> */}
+                {/* <hr /> */}
+                {/* <div>
                   <div
                     className="section-title d-flex justify-content-between align-items-center"
                     onClick={() => toggleSection("section3")}
@@ -574,10 +655,10 @@ export default function DataLayers() {
                       Values are only placeholders. Update with your own values.
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
 
-              <div className="d-flex flex-row justify-content-center align-items-center text-center" style={{ marginTop: '8%' }}>
+              {/* <div className="d-flex flex-row justify-content-center align-items-center text-center" style={{ marginTop: '8%' }}>
                 <div className="me-2">
                   <a
                     className="group-btn"
@@ -592,7 +673,7 @@ export default function DataLayers() {
                     Contact Me
                   </a>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -600,3 +681,12 @@ export default function DataLayers() {
     </>
   );
 }
+
+/* 
+The annual flux map (annual sunlight on roofs) of the region. Values are kWh/kW/year.
+This is unmasked flux: flux is computed for every location, not just building
+rooftops. Invalid locations are stored as -9999: locations outside our coverage area
+will be invalid, and a few locations inside the coverage area, where we were unable to
+calculate flux, will also be invalid.
+
+*/

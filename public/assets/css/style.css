@@ -409,7 +409,7 @@ label.toggle2 i {
 }
 
 label:has(> input:checked) {
-  background-color: rgba(255, 166, 0, 1) !important;
+  /* background-color: rgba(255, 166, 0, 1) !important; */
 }
 
 input[type="checkbox"]:checked+i {
@@ -575,4 +575,16 @@ button:hover {
   /* Font size */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   /* Shadow effect */
+}
+
+.sun-gradient {
+  background: linear-gradient(to right, 
+    #00000A,
+    #91009C,
+    #E64616,
+    #FEB400,
+    #FFFFF6
+  );
+  border: 2px solid black !important;
+  border-radius: .25rem !important;
 }
