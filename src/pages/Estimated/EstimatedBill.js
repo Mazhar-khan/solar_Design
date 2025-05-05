@@ -25,10 +25,6 @@ export default function EstimatedBill() {
             return; // Prevent navigation
         }
 
-        console.log("Average Electricity Bill:", averageBill);
-        console.log("Location Info:", data.locationInfo);
-        console.log("Building Insights:", data.buildingInsights);
-
         navigate('/final'); // Navigate to the final page
     };
 

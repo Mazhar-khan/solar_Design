@@ -8,8 +8,7 @@ export default function FinalPurposal() {
 
     return (
         <>
-          <ProposalHeader />
-          
+            <ProposalHeader />
             <Final />
             <SolarEstimated />
             <Graph />

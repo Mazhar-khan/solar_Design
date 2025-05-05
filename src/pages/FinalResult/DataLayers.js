@@ -9,7 +9,7 @@ import { AppContext } from '../../context/Context';
 import { getLayer } from './Layer';
 import { findSolarConfig } from './Utils';
 
-const GOOGLE_MAPS_API_KEY = "AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg";
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
 
 export default function DataLayers() {
   const mapRef = useRef(null);

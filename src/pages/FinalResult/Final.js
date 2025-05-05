@@ -31,7 +31,7 @@ export default function Final() {
 
 
   const downloadGeoTIFF = async () => {
-    const apiKey = "AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg";
+    const apiKey = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
     const url = dataLayers.rgbUrl;
     console.log(`Downloading data layer: ${url}`);
 

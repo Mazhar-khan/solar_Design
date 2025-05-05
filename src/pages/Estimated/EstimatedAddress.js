@@ -9,7 +9,7 @@ export default function EstimatedAddress() {
     const [zoom, setZoom] = useState(21);
     const [size, setSize] = useState("600x400");
     const [markerColor, setMarkerColor] = useState("red");
-    const [apikey, setApikey] = useState("AIzaSyAz5z8de2mOowIGRREyHc3gT1GgmJ3whDg");
+    const apikey = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
     const [lat, setLat] = useState(completeAddress["geo"][0].toFixed(5));
     const [long, setLong] = useState(completeAddress["geo"][1].toFixed(5));
 
