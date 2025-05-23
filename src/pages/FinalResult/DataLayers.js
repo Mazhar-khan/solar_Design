@@ -178,6 +178,8 @@ export default function DataLayers() {
     setSolarPanels(panels);
   };
 
+  
+
   // Handle Layer Changes
   useEffect(() => {
     if (!map) return;
@@ -196,6 +198,7 @@ export default function DataLayers() {
         const center = buildingInsights?.center;
         const ne = buildingInsights.boundingBox.ne;
         const sw = buildingInsights.boundingBox.sw;
+       
         const diameter = libraries.geometry.spherical.computeDistanceBetween(
           { lat: ne.latitude, lng: ne.longitude },
           { lat: sw.latitude, lng: sw.longitude }
@@ -204,7 +207,7 @@ export default function DataLayers() {
 
         console.log("diameter", diameter)
         const radius = Math.ceil(diameter / 2);
-        // const radius = 42;
+        // const radius = 12;
         console.log("radius", radius)
 
         if (center && Array.isArray(center)) {
@@ -347,6 +350,9 @@ export default function DataLayers() {
       return newState;
     });
   };
+
+
+  
 
   {/* <div ref={mapRef} id="map" style={{ width: "100vw", height: "100vh" }} /> */ }
   return (
@@ -613,8 +619,8 @@ export default function DataLayers() {
                           />
                         </div>
                         <div className="col-12 mt-3">
-                          <button className="btn btn-success" style={{ backgroundColor:'#ff9800', border:'none' }} onClick={handleSubmitVisitorInfo}>
-                          Show Proposal
+                          <button className="btn btn-success" style={{ backgroundColor: '#ff9800', border: 'none' }} onClick={handleSubmitVisitorInfo}>
+                            Show Proposal
                           </button>
                         </div>
                       </div>

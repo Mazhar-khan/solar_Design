@@ -1,17 +1,16 @@
 import { useNavigate } from 'react-router-dom';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../../context/Context';
-import { GoogleMap, Marker, Circle, InfoWindow } from '@react-google-maps/api';
 
 export default function EstimatedAddress() {
     const navigate = useNavigate();
-    const { data, buildingInsights, userAddress, completeAddress } = useContext(AppContext); // Use context to get data
-    const [zoom, setZoom] = useState(21);
-    const [size, setSize] = useState("600x400");
-    const [markerColor, setMarkerColor] = useState("red");
+    const { data, buildingInsights, userAddress, completeAddress } = useContext(AppContext);
+    const [zoom] = useState(21);
+    const [size] = useState("600x400");
+    const [markerColor] = useState("red");
     const apikey = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
-    const [lat, setLat] = useState(completeAddress["geo"][0].toFixed(5));
-    const [long, setLong] = useState(completeAddress["geo"][1].toFixed(5));
+    const [lat] = useState(completeAddress["geo"][0].toFixed(5));
+    const [long] = useState(completeAddress["geo"][1].toFixed(5));
 
     return (
         <div>
@@ -28,7 +27,7 @@ export default function EstimatedAddress() {
                     className="position-absolute text-white d-flex flex-column align-items-center justify-content-center"
                     style={{ top: 0, right: 0, bottom: 0, left: 0 }}
                 >
-                    <div className='d-flex justify-content-center align-items-center text-center mt-4'>
+                    <div className='d-flex justify-content-center align-items-center text-center mt-4 w-100'>
                         <div className="card" style={{ width: '90%', height: 'auto', padding: '10px' }}>
                             <div className="container-fluid">
                                 <div className="row d-flex justify-content-center align-items-center">
@@ -58,20 +57,14 @@ export default function EstimatedAddress() {
                                         </p>
 
                                         <div className="mt-5">
-                                            <a
-                                                onClick={() => navigate('/map')}
-                                                className="button-element"
-                                            >
+                                            <a onClick={() => navigate('/map')} className="button-element">
                                                 That’s Right
                                                 <i className="fas fa-long-arrow-alt-right ms-2" style={{ fontSize: '30px' }}></i>
                                             </a>
                                         </div>
 
                                         <div className="mt-3">
-                                            <a
-                                                onClick={() => navigate('/')}
-                                                className="buttons-elemented d-flex align-items-center text-decoration-none fw-bold"
-                                            >
+                                            <a onClick={() => navigate('/')} className="buttons-elemented d-flex align-items-center text-decoration-none fw-bold">
                                                 <i className="fas fa-long-arrow-alt-left me-2" style={{ fontSize: '30px' }}></i>
                                                 That’s Not Right
                                             </a>
@@ -79,28 +72,43 @@ export default function EstimatedAddress() {
                                     </div>
                                 </div>
 
-                                <div className="col-md-6 d-flex justify-content-center align-items-center text-center mt-4">
-                                    <img
-                                        src={`https://maps.googleapis.com/maps/api/staticmap?center=${lat},${long}&zoom=${zoom}&size=${size}&maptype=satellite&markers=color:${markerColor}%7C${lat},${long}&key=${apikey}`}
-                                        // src={`https://solar.googleapis.com/v1/dataLayers:getRaster?location.latitude=${data?.userInfo.lati.toFixed(5)}&location.longitude=${data?.userInfo.longi.toFixed(5)}&radiusMeters=100&view=FULL_LAYER&layer=SOLAR_POTENTIAL&key=${apikey}`}
-                                        alt='Solar Image'
-                                        className="img-fluid"
-                                        style={{ maxHeight: '95%', maxWidth: '100%', borderRadius: '35% 2% 2% 2%', border: '1px solid rgba(255, 166, 0, 1)', objectFit: 'contain' }}
-                                    />
-                                    {/* */}
+                                {/* Images Section */}
+                                <div className="col-md-6 d-flex justify-content-center align-items-center mt-4">
+                                    <div className="d-flex flex-row flex-wrap justify-content-center align-items-center w-100 gap-3">
+                                        {/* Satellite View */}
+                                        <img
+                                            src={`https://maps.googleapis.com/maps/api/staticmap?center=${lat},${long}&zoom=${zoom}&size=${size}&maptype=satellite&markers=color:${markerColor}%7C${lat},${long}&key=${apikey}`}
+                                            alt='Satellite View'
+                                            className="img-fluid"
+                                            style={{ width: '48%', borderRadius: '15px', border: '2px solid rgba(255, 166, 0, 1)' }}
+                                        />
 
+                                        {/* Street View */}
+                                        <img
+                                            src={`https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${lat},${long}&fov=80&heading=70&pitch=0&key=${apikey}`}
+                                            alt='Street View'
+                                            className="img-fluid"
+                                            style={{ width: '48%', borderRadius: '15px', border: '2px solid rgba(255, 166, 0, 1)' }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Responsive override */}
             <style jsx>{`
                 @media (max-width: 768px) {
                     .card {
-                        width: 90% !important; /* Use !important to ensure it overrides other styles */
+                        width: 90% !important;
                         height: auto !important;
                         padding: 20px !important;
+                    }
+                    .img-fluid {
+                        width: 100% !important;
+                        margin-bottom: 10px;
                     }
                 }
             `}</style>

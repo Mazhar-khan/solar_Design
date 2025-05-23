@@ -90,7 +90,6 @@ export default function Final() {
     };
   };
 
-
   const rgbToColor = ({ r, g, b }) => {
     const f = (x) => {
       const hex = Math.round(x).toString(16);
@@ -119,7 +118,6 @@ export default function Final() {
   const handleChange = (event) => {
     const newPanelCapacity = Number(event.target.value);
     setPanelCapacity(newPanelCapacity);
-
     yearlyEnergyConsumption(newPanelCapacity);
   };
 
@@ -284,8 +282,6 @@ export default function Final() {
     let val = Number(event.target.value);
     setPanelRange(val);
   }
-
-
 
   // const drawSunlightPolygons = useCallback(() => {
   //   if (!window.google || !dataLayers) return;
