@@ -14,6 +14,11 @@ const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
 export default function DataLayers() {
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
+  const [isMonthlyFlux, setIsMonthlyFlux] = useState(false);
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentMonthIndex = new Date().getMonth(); // 0 = January
+
+  const [selectedMonth, setSelectedMonth] = useState(monthNames[currentMonthIndex]);
 
   const [map, setMap] = useState(null);
   const { completeAddress } = useContext(AppContext);
@@ -21,7 +26,6 @@ export default function DataLayers() {
 
   const [showSolarPanels, setShowSolarPanels] = useState(false);
   const [showHeatMap, setShowHeatMap] = useState(true);
-
 
   const [libraries, setLibraries] = useState({});
   const [layerId, setLayerId] = useState('annualFlux');
@@ -178,7 +182,7 @@ export default function DataLayers() {
     setSolarPanels(panels);
   };
 
-  
+
 
   // Handle Layer Changes
   useEffect(() => {
@@ -198,7 +202,7 @@ export default function DataLayers() {
         const center = buildingInsights?.center;
         const ne = buildingInsights.boundingBox.ne;
         const sw = buildingInsights.boundingBox.sw;
-       
+
         const diameter = libraries.geometry.spherical.computeDistanceBetween(
           { lat: ne.latitude, lng: ne.longitude },
           { lat: sw.latitude, lng: sw.longitude }
@@ -213,9 +217,16 @@ export default function DataLayers() {
         if (center && Array.isArray(center)) {
           map.setCenter({ lat: center[0], lng: center[1] });
         }
-
+        const selectedMonthIndex = monthNames.indexOf(selectedMonth); // 0-based
         const response = await getDataLayerUrls(center, radius, GOOGLE_MAPS_API_KEY);
-        const loadedLayer = await getLayer(layerId, response, GOOGLE_MAPS_API_KEY);
+        let loadedLayer;
+
+        if (isMonthlyFlux) {
+          loadedLayer = await getLayer('monthlyFlux', response, GOOGLE_MAPS_API_KEY, selectedMonthIndex);
+        } else {
+          loadedLayer = await getLayer('annualFlux', response, GOOGLE_MAPS_API_KEY);
+        }
+        // const loadedLayer = await getLayer(layerId, response, GOOGLE_MAPS_API_KEY);
         const defaultEnergy = buildingInsights.solarPotential.maxSunshineHoursPerYear;
         setYearlyEnergy(defaultEnergy);
         setLayer(loadedLayer);
@@ -225,7 +236,7 @@ export default function DataLayers() {
     }
 
     fetchLayer();
-  }, [map, layerId, clearOverlays]);
+  }, [map, layerId, clearOverlays, isMonthlyFlux, selectedMonth]);
 
   // Render Layer Overlays
   useEffect(() => {
@@ -303,6 +314,16 @@ export default function DataLayers() {
     // TODO: Send to server/API
   };
 
+  const handleMonthlyToggle = (checked) => {
+  setIsMonthlyFlux(checked);
+  if (checked) {
+    setLayerId('monthlyFlux');
+  } else {
+    setLayerId('annualFlux');
+  }
+};
+
+
   const handleChange = (event) => {
     const newPanelCapacity = Number(event.target.value);
     setPanelCapacity(newPanelCapacity);
@@ -352,7 +373,7 @@ export default function DataLayers() {
   };
 
 
-  
+
 
   {/* <div ref={mapRef} id="map" style={{ width: "100vw", height: "100vh" }} /> */ }
   return (
@@ -399,11 +420,12 @@ export default function DataLayers() {
                   </div>
                 </div>
                 <div className='mt-4' >
-                  <div className="insights-card position-absolute" style={{ top: "250px", left: "10px", zIndex: 1000 }}>
+                  <div className="insights-card position-absolute" style={{ bottom: "30px", left: "300px", zIndex: 1000 }}>
                     <div className="card-header">
                       <i className="fas fa-layer-group icon"></i>
-                      <span className="title">Annual Flux</span>
+                      <span className="title">Annual Flux </span>
                     </div>
+
                     <hr />
                     <div className="card-body">
                       <div className="data-row">
@@ -550,13 +572,47 @@ export default function DataLayers() {
                             </span>
                           </div>
 
+                          <div>
+                            <label className="switch">
+                              <input
+                                type="checkbox"
+                                checked={isMonthlyFlux}
+                                onChange={(e) => handleMonthlyToggle(e.target.checked)}
+                              />
+                              <span className="slider round"></span>
+                            </label>
+                            <span style={{ marginLeft: "10px" }}>
+                              Show Monthly Flux
+                            </span>
+                          </div>
+
+                          {isMonthlyFlux && (
+                            <div className="mt-3">
+                              <label htmlFor="monthDropdown">Month:</label>
+                              <select
+                                id="monthDropdown"
+                                className="form-select mt-1"
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(e.target.value)}
+                              >
+                                {monthNames.map((month) => (
+                                  <option key={month} value={month}>
+                                    {month}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+
+
                           <div style={{ marginTop: '5px' }} >
                             <label class="switch">
                               <input type="checkbox" checked={showHeatMap} value={showHeatMap} onClick={() => toggleHeatMap()} />
                               <span class="slider round"></span>
                             </label>
                             <span style={{ marginLeft: "10px" }}>
-                              Heat map
+                              Annual Heat map
                             </span>
                           </div>
                           {/* <button onClick={() => toggleSolarPanels()}>

@@ -83,13 +83,16 @@ export default function EstimatedAddress() {
                                             style={{ width: '48%', borderRadius: '15px', border: '2px solid rgba(255, 166, 0, 1)' }}
                                         />
 
-                                        {/* Street View */}
+                                        {/* Street View map should place below of this line */}
+                                        {/* Street View View */}
                                         <img
-                                            src={`https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${lat},${long}&fov=80&heading=70&pitch=0&key=${apikey}`}
+                                            src={`https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${lat},${long}&fov=30&heading=270&pitch=0&key=${apikey}`}
                                             alt='Street View'
                                             className="img-fluid"
                                             style={{ width: '48%', borderRadius: '15px', border: '2px solid rgba(255, 166, 0, 1)' }}
                                         />
+
+
                                     </div>
                                 </div>
                             </div>

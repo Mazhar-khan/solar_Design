@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Street View from Address</title>
+    <style>
+      #map, #street-view {
+        width: 100%;
+        height: 400px;
+      }
+      body {
+        font-family: Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Enter Address to View Street View</h2>
+    <input id="address" type="text" placeholder="Enter address" size="50" />
+    <button onclick="loadStreetView()">Show Street View</button>
+    <div id="street-view"></div>
+
+    <script>
+      let map;
+      let panorama;
+      let geocoder;
+
+      function initMap() {
+        geocoder = new google.maps.Geocoder();
+        panorama = new google.maps.StreetViewPanorama(
+          document.getElementById("street-view"),
+          {
+            position: { lat: 37.7749, lng: -122.4194 }, 
+            pov: { heading: 165, pitch: 0 },
+            zoom: 1,
+          }
+        );
+      }
+
+      function loadStreetView() {
+        const address = document.getElementById("address").value;
+        geocoder.geocode({ address: address }, (results, status) => {
+          if (status === "OK") {
+            const location = results[0].geometry.location;
+            panorama.setPosition(location);
+          } else {
+            alert("Geocode failed: " + status);
+          }
+        });
+      }
+    </script>
+
+    <!-- Load Google Maps JavaScript API -->
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAegOS5p_GTgQp51lgkGPop6nLTCpHQDuo&callback=initMap">
+    </script>
+  </body>
+</html>

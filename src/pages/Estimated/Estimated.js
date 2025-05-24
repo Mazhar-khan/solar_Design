@@ -142,9 +142,10 @@ export default function Estimated() {
                                 className="form-control mb-2 mb-sm-0 me-sm-2"
                                 placeholder="Enter Your Address"
                                 options={{ types: ['address'] }}
+
                                 title="Please enter a valid address."
                             />
-                            <button
+                            {/* <button
                                 onClick={handleSubmit}
                                 className="button-elemented"
                                 style={{
@@ -153,7 +154,25 @@ export default function Estimated() {
                                 }}
                             >
                                 Get Started
-                            </button>
+                            </button> */}
+                            <div className="tooltip-wrapper">
+                                <button
+                                    onClick={handleSubmit}
+                                    className="button-elemented"
+                                    style={{
+                                        opacity: isAddressSelected ? 1 : 0.5,
+                                        pointerEvents: isAddressSelected ? 'auto' : 'none'
+                                    }}
+                                >
+                                    Get Started
+                                </button>
+                                <div className="tooltip-text">
+                                    The tool needs a specific address to do its job… it doesn’t work without one.
+                                </div>
+                            </div>
+
+
+
                         </div>
                     </div>
                     <ul className="text-start mt-3">
@@ -210,7 +229,7 @@ export default function Estimated() {
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td style={{color:'#ffffff'}} >
+                                            <td style={{ color: '#ffffff' }} >
                                                 <ul className="text-start">
                                                     <li>Estimates solar energy potential based on satellite data.</li>
                                                     <li>Allows customization of solar panel configurations.</li>
@@ -219,7 +238,7 @@ export default function Estimated() {
                                                     <li>Uses real-time location-specific utility rates.</li>
                                                 </ul>
                                             </td>
-                                            <td style={{color:'#ffffff'}}>
+                                            <td style={{ color: '#ffffff' }}>
                                                 <ul className="text-start">
                                                     <li>Does not initiate or finalize installation.</li>
                                                     <li>Does not guarantee financial returns.</li>
