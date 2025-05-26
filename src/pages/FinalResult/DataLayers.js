@@ -14,18 +14,23 @@ const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
 export default function DataLayers() {
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
-  const [isMonthlyFlux, setIsMonthlyFlux] = useState(false);
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const currentMonthIndex = new Date().getMonth(); // 0 = January
+  const [isMonthlyFlux, setIsMonthlyFlux] = useState(true);
 
+  const [showMonthlyHeatMap, setShowMonthlyHeatMap] = useState(true);
+  const [showAnnualHeatMap, setShowAnnualHeatMap] = useState(false);
+  const [averageBill, setAverageBill] = useState(125); // default from U.S. Dept of Energy
+
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentMonthIndex = new Date().getMonth();
   const [selectedMonth, setSelectedMonth] = useState(monthNames[currentMonthIndex]);
 
   const [map, setMap] = useState(null);
   const { completeAddress } = useContext(AppContext);
+  console.log("completeAddress",completeAddress)
   const [yearlyEnergy, setYearlyEnergy] = useState(0);
 
   const [showSolarPanels, setShowSolarPanels] = useState(false);
-  const [showHeatMap, setShowHeatMap] = useState(true);
 
   const [libraries, setLibraries] = useState({});
   const [layerId, setLayerId] = useState('annualFlux');
@@ -59,7 +64,6 @@ export default function DataLayers() {
     overlaysRef.current = [];
   }, []);
 
-  // Initialize Map and Libraries
   useEffect(() => {
     async function initialize() {
       const loader = new Loader({
@@ -94,15 +98,12 @@ export default function DataLayers() {
     initialize();
   }, []);
 
-  // Load Building Insights and Solar Panels
   const loadBuildingInsights = async (geometry, mapInstance) => {
     const buildingInsights = await findClosestBuilding(completeAddress, GOOGLE_MAPS_API_KEY);
     setBuildingInsights(buildingInsights)
     setPanelCapacity(buildingInsights?.solarPotential.panelCapacityWatts)
 
     if (!buildingInsights) return;
-
-
 
     const defaultPanelCapacity = buildingInsights.solarPotential.panelCapacityWatts;
     const panelCapacityRatio = panelCapacityWattsInput / defaultPanelCapacity;
@@ -113,6 +114,7 @@ export default function DataLayers() {
       panelCapacityRatio,
       dcToAcDerateInput
     );
+
     await renderSolarPanels(geometry, buildingInsights, mapInstance, foundConfigId);
     setConfigId(foundConfigId);
 
@@ -127,20 +129,14 @@ export default function DataLayers() {
       return;
     }
 
-    console.log("id", id)
-
     const solarPotential = buildingInsights.solarPotential;
     const palette = createPalette(panelsPalette).map(rgbToColor);
 
     const minEnergy = solarPotential.solarPanels.slice(-1)[0].yearlyEnergyDcKwh;
     const maxEnergy = solarPotential.solarPanels[0].yearlyEnergyDcKwh;
 
-    // const PANEL_COUNT = id;
-    console.log("configId", configId)
     let panelCountToRender = panelRange ?? panelConfig?.panelCount ?? id;
     let panelsToRender = solarPotential.solarPanels.slice(0, panelCountToRender);
-
-    // let panelsToRender = solarPotential.solarPanels.slice(0, id);
 
     const panels = panelsToRender.map(panel => {
       const [w, h] = [solarPotential.panelWidthMeters / 2, solarPotential.panelHeightMeters / 2];
@@ -172,11 +168,10 @@ export default function DataLayers() {
         fillOpacity: 0.9,
       });
     });
-    // Clear existing solar panels
+
     solarPanels.forEach(panel => panel.setMap(null));
     setSolarPanels([]);
 
-    // panels.forEach(panel => panel.setMap(mapInstance));
     panels.forEach(panel => panel.setMap(showSolarPanels ? mapInstance : null));
 
     setSolarPanels(panels);
@@ -184,7 +179,6 @@ export default function DataLayers() {
 
 
 
-  // Handle Layer Changes
   useEffect(() => {
     if (!map) return;
 
@@ -208,11 +202,8 @@ export default function DataLayers() {
           { lat: sw.latitude, lng: sw.longitude }
         );
 
-
-        console.log("diameter", diameter)
         const radius = Math.ceil(diameter / 2);
         // const radius = 12;
-        console.log("radius", radius)
 
         if (center && Array.isArray(center)) {
           map.setCenter({ lat: center[0], lng: center[1] });
@@ -222,6 +213,7 @@ export default function DataLayers() {
         let loadedLayer;
 
         if (isMonthlyFlux) {
+          const monthKey = `monthlyFlux-${selectedMonthIndex}-${Date.now()}`;
           loadedLayer = await getLayer('monthlyFlux', response, GOOGLE_MAPS_API_KEY, selectedMonthIndex);
         } else {
           loadedLayer = await getLayer('annualFlux', response, GOOGLE_MAPS_API_KEY);
@@ -238,29 +230,28 @@ export default function DataLayers() {
     fetchLayer();
   }, [map, layerId, clearOverlays, isMonthlyFlux, selectedMonth]);
 
-  // Render Layer Overlays
   useEffect(() => {
     if (!map || !layer) return;
 
     clearOverlays();
-
     const bounds = layer.bounds;
-    const newOverlays = layer.render(showRoofOnly, 0, 0).map(canvas => {
-      return new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
-    });
+    const selectedMonthIndex = monthNames.indexOf(selectedMonth);
 
-    // newOverlays.forEach(overlay => overlay.setMap(map));
-    newOverlays.forEach(overlay => overlay.setMap(showHeatMap ? map : null));
+    let newOverlays;
+    if (showMonthlyHeatMap) {
+      newOverlays = layer.render(showRoofOnly, selectedMonthIndex, 0).map(canvas => {
+        return new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
+      });
 
+    } else if (showAnnualHeatMap) {
+      newOverlays = layer.render(showRoofOnly, 0, 0).map(canvas => {
+        return new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
+      });
+    }
+
+    newOverlays?.forEach((overlay, i) => overlay.setMap(i == selectedMonthIndex ? map : null));
     overlaysRef.current = newOverlays;
-  }, [map, layer, showRoofOnly, clearOverlays]);
-
-  // const updateRangeFunc = (event) => {
-  //   let val = Number(event.target.value);
-  //   setConfigId(val)
-  //   setPanelRange(val);
-  //   // setYearlyEnergy(prev => prev + 1);
-  // }
+  }, [map, layer, showRoofOnly, clearOverlays, selectedMonth, isMonthlyFlux, showMonthlyHeatMap]);
 
   const updateRangeFunc = (event) => {
     const val = Number(event.target.value);
@@ -297,9 +288,9 @@ export default function DataLayers() {
         setShowChart(false);
       } else if (section === "section3") {
         setShowProfileCard(false);
-        setShowSolarCard(true); // Show solar card for section 3
+        setShowSolarCard(true);
         setShowChart(true);
-        setSolarPotential(false); // Show chart for section 3
+        setSolarPotential(false);
       }
     }
   };
@@ -315,13 +306,30 @@ export default function DataLayers() {
   };
 
   const handleMonthlyToggle = (checked) => {
-  setIsMonthlyFlux(checked);
-  if (checked) {
-    setLayerId('monthlyFlux');
-  } else {
-    setLayerId('annualFlux');
-  }
-};
+    clearOverlays()
+    if (checked) {
+      setIsMonthlyFlux(true);
+      setShowMonthlyHeatMap(true);
+      setShowAnnualHeatMap(false);
+      setLayerId('monthlyFlux');
+    } else if (checked == false) {
+      setIsMonthlyFlux(false);
+      setShowMonthlyHeatMap(false);
+      clearOverlays();
+    }
+  };
+
+  const toggleAnnualHeatMap = () => {
+    clearOverlays()
+    if (showAnnualHeatMap) {
+      setShowAnnualHeatMap(false);
+    } else if (!showAnnualHeatMap) {
+      setShowAnnualHeatMap(true);
+      setShowMonthlyHeatMap(false);
+      setLayerId('annualFlux');
+    }
+  };
+
 
 
   const handleChange = (event) => {
@@ -329,26 +337,16 @@ export default function DataLayers() {
     setPanelCapacity(newPanelCapacity);
 
     if (buildingInsights) {
-      // Assume yearlyEnergy is proportional to capacity
       const defaultCapacity = buildingInsights.solarPotential.panelCapacityWatts;
-      const defaultEnergy = buildingInsights.solarPotential.maxSunshineHoursPerYear; // Or another energy metric you prefer
+      const defaultEnergy = buildingInsights.solarPotential.maxSunshineHoursPerYear;
 
       const newYearlyEnergy = (newPanelCapacity / defaultCapacity) * defaultEnergy;
       setYearlyEnergy(newYearlyEnergy);
     }
-    // yearlyEnergyConsumption(newPanelCapacity);
   };
-
-  // useEffect(() => {
-  //   if (panelRange !== undefined && buildingInsights && libraries.geometry && map) {
-  //     clearOverlays();
-  //     renderSolarPanels(libraries.geometry, buildingInsights, map, panelRange);
-  //   }
-  // }, [panelRange]);
 
   useEffect(() => {
     if (panelRange !== undefined && buildingInsights && libraries.geometry && map) {
-      // Clear existing solar panels only
       solarPanels.forEach(panel => panel.setMap(null));
       setSolarPanels([]);
 
@@ -364,18 +362,6 @@ export default function DataLayers() {
     });
   };
 
-  const toggleHeatMap = () => {
-    setShowHeatMap(prev => {
-      const newState = !prev;
-      overlaysRef.current.forEach(overlay => overlay.setMap(newState ? map : null));
-      return newState;
-    });
-  };
-
-
-
-
-  {/* <div ref={mapRef} id="map" style={{ width: "100vw", height: "100vh" }} /> */ }
   return (
     <>
       <section className="container-fluid p-0">
@@ -387,22 +373,33 @@ export default function DataLayers() {
                 <div className="insights-card position-absolute" style={{ top: "20px", left: "10px", zIndex: 1000 }}>
                   <div className="card-header">
                     <i className="fas fa-home home-icon"></i>
-                    <span className="title">Building Insights endpoint</span>
+                    <span className="title mt-1">
+                      {
+                        completeAddress?.streetNumber + " " + completeAddress?.street
+                      }
+                    </span>
                   </div>
                   <hr />
                   <div className="card-body">
+                    <div className="info-text text-muted mb-2" style={{ fontSize: "12px" }}>
+                      Based on daily readings of solar energy for your location, accounting for cloud cover, and shading from trees and other structures.
+                      <br />
+                      To be revised. Also, this value factors in the azimuth of the property’s roof-faces/segments, right? Does it also factor in roof area?
+                    </div>
+
                     <div className="data-row">
-                      <span>Annual sunshine</span>
+                      <span>Annual Solar Intensity</span>
                       <span className="value">
                         {buildingInsights?.solarPotential?.maxSunshineHoursPerYear
-                          ? `${buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1)} hr`
+                          ? `${Math.round(buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1))} hr`
                           : 'N/A'}
                       </span>
                     </div>
                     <div className="data-row">
-                      <span>Roof area</span>
+                      <span>Roof Area Apprx</span>
                       <span className="value">
-                        {buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2) || 'N/A'} m²
+                        {/* {buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2) || 'N/A'} m² */}
+                        {Math.round(buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2)) || 'N/A'} m²
                       </span>
                     </div>
                     <div className="data-row">
@@ -419,20 +416,15 @@ export default function DataLayers() {
                     </div>
                   </div>
                 </div>
-                <div className='mt-4' >
+                <div className='mt-4'>
                   <div className="insights-card position-absolute" style={{ bottom: "30px", left: "300px", zIndex: 1000 }}>
                     <div className="card-header">
                       <i className="fas fa-layer-group icon"></i>
-                      <span className="title">Annual Flux </span>
+                      <span className="title">Solar Intensity Key</span>
                     </div>
 
                     <hr />
-                    <div className="card-body">
-                      <div className="data-row">
-                        <p style={{ textAlign: 'left' }}>
-                          The annual flux map (annual sunlight on roofs) of the region.
-                        </p>
-                      </div>
+                    <div className="card-body" style={{ width: '100%' }} >
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <span style={{ marginRight: "10px" }} >Shaday</span>
                         <div class="sun-gradient" style={{ flex: 1, height: '30px' }} ></div>
@@ -443,77 +435,13 @@ export default function DataLayers() {
                 </div>
               </>
             )}
-            {/* 
-            {showSolarCard && (
-              <div className="solar-card position-absolute" style={{ top: "20px", left: "20px", zIndex: 1000 }}>
-                <div className="card-header">
-                  <i className="fas fa-money-check  header-icon"></i>
-                  <span className="title">Solar Potential analysis</span>
-                </div>
-                <hr />
-                <div className="card-body">
-                  <div className="data-row">
-                    <span>Yearly energy</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                  <div className="data-row">
-                    <span>Installation size</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                  <div className="data-row">
-                    <span>Installation cost</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                  <div className="data-row">
-                    <span>Energy covered</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                </div>
-              </div>
-            )} */}
-            {/* {showChart && (
-              <div className="chart-container position-absolute" style={{ top: "250px", left: "20px", zIndex: 1000 }}>
-                <h4 className="chart-title">Cost analysis for 20 years</h4>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="solar" stroke="#007bff" name="Solar" />
-                    <Line type="monotone" dataKey="noSolar" stroke="#ff4d4d" name="No solar" />
-                  </LineChart>
-                </ResponsiveContainer>
-                <div className="summary">
-                  <div className="summary-row">
-                    <span>Cost without solar</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Cost with solar</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Savings</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                  <div className="summary-row">
-                    <span>Break even</span>
-                    <span className="value">in-progress</span>
-                  </div>
-                </div>
-              </div>
-            )} */}
           </div>
 
           <div className="col-md-4 d-flex align-items-start" style={{ background: "#f8f8f8", height: "100vh", overflowY: "auto" }}>
             <div className="container">
-
               <p className="text-muted text-center mt-4">
-                Click an area below to see what type of information the Solar API can provide.
+                See What Solar Can Do For You
               </p>
-
               <div className="custom-card p-3 shadow rounded mt-4">
                 <div>
                   <div
@@ -522,14 +450,34 @@ export default function DataLayers() {
                     style={{ cursor: "pointer" }}
                   >
                     <span>
-                      <i className="fas fa-home icon text-warning me-2"></i> <b>Building Insights endpoint</b>
+                      <i className="fas fa-home icon text-warning me-2"></i> <b>Your Solar Home System</b>
                       <p style={{ color: "black", marginLeft: "14%", fontSize: "13px" }}>
-                        Yearly energy: {Math.round(yearlyEnergy / 1000)} KWh </p>
+                        {/* Yearly energy: {Math.round(yearlyEnergy / 1000)} KWh  */}
+                      </p>
                     </span>
                     <i className={` fas fa-chevron-${openSection === "section1" ? "up" : "down"}`}></i>
                   </div>
                   {openSection === "section1" && (
                     <div className="section-content ps-4 text-secondary">
+                      <div className="mt-4">
+                        <fieldset className="border p-2 rounded">
+                          <legend className="fs-6 text-muted">Average Monthly Electricity Bill</legend>
+                          <div className="input-group">
+                            <input
+                              type="number"
+                              className="form-control"
+                              value={averageBill}
+                              onChange={(e) => setAverageBill(Number(e.target.value))}
+                              placeholder="Enter your average monthly bill"
+                            />
+                            <span style={{ height: '54px' }} className="input-group-text">$</span>
+                          </div>
+                          <small className="text-muted mt-1 d-block">
+                            Source: U.S. Dept of Energy, residential average
+                          </small>
+                        </fieldset>
+                      </div>
+
                       <div className="row">
                         <div className="col-6 text-start">
                           <p><strong>Panel count</strong> </p>
@@ -546,7 +494,6 @@ export default function DataLayers() {
                         value={configId}
                         onChange={updateRangeFunc}
                       />
-
 
                       <fieldset className="border p-2 rounded">
                         <legend className="fs-6 text-muted">Panel Capacity</legend>
@@ -576,14 +523,15 @@ export default function DataLayers() {
                             <label className="switch">
                               <input
                                 type="checkbox"
-                                checked={isMonthlyFlux}
+                                checked={showMonthlyHeatMap}
                                 onChange={(e) => handleMonthlyToggle(e.target.checked)}
                               />
                               <span className="slider round"></span>
                             </label>
                             <span style={{ marginLeft: "10px" }}>
-                              Show Monthly Flux
+                              Average monthly solar intensity
                             </span>
+
                           </div>
 
                           {isMonthlyFlux && (
@@ -593,7 +541,10 @@ export default function DataLayers() {
                                 id="monthDropdown"
                                 className="form-select mt-1"
                                 value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
+                                onChange={(e) => {
+                                  clearOverlays();
+                                  setSelectedMonth(e.target.value);
+                                }}
                               >
                                 {monthNames.map((month) => (
                                   <option key={month} value={month}>
@@ -604,29 +555,26 @@ export default function DataLayers() {
                             </div>
                           )}
 
-
-
-                          <div style={{ marginTop: '5px' }} >
-                            <label class="switch">
-                              <input type="checkbox" checked={showHeatMap} value={showHeatMap} onClick={() => toggleHeatMap()} />
-                              <span class="slider round"></span>
+                          <div style={{ marginTop: '5px' }}>
+                            <label className="switch">
+                              <input
+                                type="checkbox"
+                                checked={showAnnualHeatMap}
+                                onChange={toggleAnnualHeatMap}
+                              />
+                              <span className="slider round"></span>
                             </label>
                             <span style={{ marginLeft: "10px" }}>
-                              Annual Heat map
+                              Average annual solar intensity
                             </span>
                           </div>
-                          {/* <button onClick={() => toggleSolarPanels()}>
-                            {showSolarPanels ? 'Hide Solar Panels' : 'Show Solar Panels'}
-                          </button> */}
-                          {/* <button onClick={() => toggleHeatMap()}>
-                            {showHeatMap ? 'Hide Heatmap' : 'Show Heatmap'}
-                          </button> */}
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
                 <div>
+
                   <div
                     className="section-title d-flex justify-content-between align-items-center"
                     onClick={() => toggleSection("visitorInfo")}
@@ -683,59 +631,7 @@ export default function DataLayers() {
                     </div>
                   )}
                 </div>
-
-                {/* <hr /> */}
-                {/* <div>
-                  <div
-                    className="section-title d-flex justify-content-between align-items-center"
-                    onClick={() => toggleSection("section2")}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span>
-                      <i className="fas fa-layer-group icon text-warning me-2"></i> <b>Data Layers endpoint</b>
-                    </span>
-                    <i className={`fas fa-chevron-${openSection === "section2" ? "up" : "down"}`}></i>
-                  </div>
-                  {openSection === "section2" && (
-                    <div className="section-content ps-4 text-secondary">Monthly sunshine</div>
-                  )}
-                </div> */}
-                {/* <hr /> */}
-                {/* <div>
-                  <div
-                    className="section-title d-flex justify-content-between align-items-center"
-                    onClick={() => toggleSection("section3")}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <span>
-                      <i className="fas fa-money-check icon text-warning me-2"></i> <b>Solar Potential analysis</b>
-                    </span>
-                    <i className={`fas fa-chevron-${openSection === "section3" ? "up" : "down"}`}></i>
-                  </div>
-                  {openSection === "section3" && (
-                    <div className="section-content ps-4 text-secondary">
-                      Values are only placeholders. Update with your own values.
-                    </div>
-                  )}
-                </div> */}
               </div>
-
-              {/* <div className="d-flex flex-row justify-content-center align-items-center text-center" style={{ marginTop: '8%' }}>
-                <div className="me-2">
-                  <a
-                    className="group-btn"
-                  >
-                    Show Proposal
-                  </a>
-                </div>
-                <div>
-                  <a
-                    className="group-btn"
-                  >
-                    Contact Me
-                  </a>
-                </div>
-              </div> */}
             </div>
           </div>
         </div>
@@ -743,12 +639,3 @@ export default function DataLayers() {
     </>
   );
 }
-
-/* 
-The annual flux map (annual sunlight on roofs) of the region. Values are kWh/kW/year.
-This is unmasked flux: flux is computed for every location, not just building
-rooftops. Invalid locations are stored as -9999: locations outside our coverage area
-will be invalid, and a few locations inside the coverage area, where we were unable to
-calculate flux, will also be invalid.
-
-*/
