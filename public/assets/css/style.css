@@ -578,13 +578,12 @@ button:hover {
 }
 
 .sun-gradient {
-  background: linear-gradient(to right, 
-    #00000A,
-    #91009C,
-    #E64616,
-    #FEB400,
-    #FFFFF6
-  );
+  background: linear-gradient(to right,
+      #00000A,
+      #91009C,
+      #E64616,
+      #FEB400,
+      #FFFFF6);
   border: 2px solid black !important;
   border-radius: .25rem !important;
 }
@@ -596,7 +595,8 @@ button:hover {
   /* width: 100%; */
 }
 
-#customers td, #customers th {
+#customers td,
+#customers th {
   border: 1px solid #ddd;
   padding: 8px;
 }
@@ -610,7 +610,7 @@ button:hover {
   padding-bottom: 12px;
   text-align: left;
   /* background-color: #04AA6D; */
-  color: white !important ;
+  color: white !important;
 }
 
 
@@ -630,8 +630,10 @@ button:hover {
 
 /* Hide scrollbar for IE, Edge */
 .scrollable-hidden-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .transparent-table {
@@ -667,14 +669,16 @@ button:hover {
   visibility: hidden;
   opacity: 0;
   width: 260px;
-  background-color: #343a40; /* Bootstrap dark */
+  background-color: #343a40;
+  /* Bootstrap dark */
   color: #fff;
   text-align: center;
   border-radius: 6px;
   padding: 10px 14px;
   position: absolute;
   z-index: 999;
-  bottom: 100%; /* Tooltip above the button */
+  bottom: 100%;
+  /* Tooltip above the button */
   left: 50%;
   transform: translateX(-50%);
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -687,7 +691,8 @@ button:hover {
 .tooltip-wrapper .tooltip-text::after {
   content: '';
   position: absolute;
-  top: 100%; /* Arrow on bottom of tooltip */
+  top: 100%;
+  /* Arrow on bottom of tooltip */
   left: 50%;
   margin-left: -6px;
   border-width: 6px;
@@ -699,4 +704,69 @@ button:hover {
   visibility: visible;
   opacity: 1;
   transform: translateX(-50%) translateY(-4px);
+}
+
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  background: white;
+  border: 2px solid orange;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  margin-top: -7px;
+}
+
+
+input:checked+.slider {
+  background-color: #ff9800 !important;
+}
+
+.transparent-box {
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Dark glass effect */
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(1px);
+}
+
+.transparent-table {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.transparent-table th,
+.transparent-table td {
+  background-color: rgba(0, 0, 0, 0.3);
+  border: none;
+}
+
+.scrollable-hidden-scrollbar {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.scrollable-hidden-scrollbar::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+.tooltip-wrapper .tooltip-text {
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+
+
+.form-check-input:checked {
+  background-color: #FFC107;
+  border-color: #FFC107;
 }

@@ -10,23 +10,24 @@ import FinalPurposal from "./pages/FinalPurposal/FinalPurposal";
 import DataLayers from "./pages/FinalResult/DataLayers";
 
 
+const libraries = ['places', 'geometry','visualization'];
+
 function App() {
   return (
     <Router>
-      {/* <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAP_API_KEY} 
-      libraries={['places','geometry','visualization']}> */}
+      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAP_API_KEY} libraries={libraries}>
         <div className="App">
           <Routes>
             <Route path="/" element={<Estimated />} />
-            <Route path="/map" element={ <DataLayers /> } />
             <Route path="/home-address" element={<EstimatedAddress />} />
+            <Route path="/map" element={ <DataLayers /> } />
             <Route path="/estimatedbill" element={<EstimatedBill />} />
             <Route path="/finalresult" element={<FinalResult />} />
             <Route path="/get-purposal" element={<Final />} />
             <Route path="/finalpurposal" element={<FinalPurposal />} />
           </Routes>
         </div>
-      {/* </LoadScript> */}
+      </LoadScript>
     </Router>
   );
 }

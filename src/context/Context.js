@@ -1,66 +1,59 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-    const [data, setData] = useState({
-        locationInfo: null,
-        buildingInsights: null,
-        panelsCount: null,
-        solarPanelConfigs: null,
-        userInfo: {
-            inputaddress: '',
-            lati: null,
-            longi: null,
-            monthly: 0,
-            panelcount: 0,
-            roofarea: 0,
-            savings: 0,
-            sqfeet: 0,
-            maxPanelCount: 0,
-            state: '',
-            sunshine: 0,
-            system_cost: 0,
-            system_size: 0,
-            country_iso: null,
-            tax_incentive: 0,
-            without_solar: 0,
-            yenergy: 0,
-            zip: '',
-        },
-        maxPanel: null
-    });
+    const [buildingInsights, setBuildingInsightsState] = useState(null);
+    const [dataLayers, setDataLayersState] = useState(null);
+    const [userAddress, setUserAddressState] = useState(null);
+    const [completeAddress, setCompleteAddressState] = useState(null);
 
-    const [buildingInsights, setBuildingInsights] = useState(null);
-    const [dataLayers, setDataLayers] = useState(null);
-    const [userAddress, setUserAddress] = useState(null);
-    const [completeAddress, setCompleteAddress] = useState(null);
+    useEffect(() => {
+        const storedInsights = localStorage.getItem('buildingInsights');
+        const storedLayers = localStorage.getItem('dataLayers');
+        const storedAddress = localStorage.getItem('userAddress');
+        const storedComplete = localStorage.getItem('completeAddress');
 
-    // useEffect(() => {
-    //     if (userData !== null) {
-    //         localStorage.setItem("userData", JSON.stringify(userData));
-    //     } else {
-    //         localStorage.removeItem("userData"); // optional: clear on null
-    //     }
-    // }, [userData]);
+        if (storedInsights) setBuildingInsightsState(JSON.parse(storedInsights));
+        if (storedLayers) setDataLayersState(JSON.parse(storedLayers));
+        if (storedAddress) setUserAddressState(JSON.parse(storedAddress));
+        if (storedComplete) setCompleteAddressState(JSON.parse(storedComplete));
+    }, []);
+
+    const setBuildingInsights = (value) => {
+        setBuildingInsightsState(value);
+        localStorage.setItem('buildingInsights', JSON.stringify(value));
+    };
+
+    const setDataLayers = (value) => {
+        setDataLayersState(value);
+        localStorage.setItem('dataLayers', JSON.stringify(value));
+    };
+
+    const setUserAddress = (value) => {
+        setUserAddressState(value);
+        localStorage.setItem('userAddress', JSON.stringify(value));
+    };
+
+    const setCompleteAddress = (value) => {
+        setCompleteAddressState(value);
+        localStorage.setItem('completeAddress', JSON.stringify(value));
+    };
 
     return (
-        <AppContext.Provider 
-        value={{ 
-            data, 
-            setData, 
-            buildingInsights, 
-            setBuildingInsights, 
-            userAddress, 
-            setUserAddress, 
-            setCompleteAddress, 
-            completeAddress,
-            dataLayers,
-            setDataLayers
-            }}>
+        <AppContext.Provider
+            value={{
+                buildingInsights,
+                setBuildingInsights,
+                dataLayers,
+                setDataLayers,
+                userAddress,
+                setUserAddress,
+                completeAddress,
+                setCompleteAddress
+            }}
+        >
             {children}
         </AppContext.Provider>
     );
 };
-
-
