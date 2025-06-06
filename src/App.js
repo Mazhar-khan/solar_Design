@@ -1,4 +1,5 @@
 import React from "react";
+import './App.css'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LoadScript } from '@react-google-maps/api';
 import Estimated from "./pages/Estimated/Estimated";
@@ -21,10 +22,10 @@ function App() {
             <Route path="/" element={<Estimated />} />
             <Route path="/home-address" element={<EstimatedAddress />} />
             <Route path="/map" element={ <DataLayers /> } />
-            <Route path="/estimatedbill" element={<EstimatedBill />} />
+            {/* <Route path="/estimatedbill" element={<EstimatedBill />} />
             <Route path="/finalresult" element={<FinalResult />} />
             <Route path="/get-purposal" element={<Final />} />
-            <Route path="/finalpurposal" element={<FinalPurposal />} />
+            <Route path="/finalpurposal" element={<FinalPurposal />} /> */}
           </Routes>
         </div>
       </LoadScript>

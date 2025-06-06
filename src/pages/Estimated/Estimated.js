@@ -1,5 +1,6 @@
 import React, { useState, useContext, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
+
 import Autocomplete from 'react-google-autocomplete';
 import { AppContext } from '../../context/Context';
 import { useBuildingInsights } from "../../hooks/useBuildingInsights";
@@ -14,6 +15,7 @@ import {
     TABLE_2,
     DISCLAIMER
 } from "../../constants/estimatedText";
+import CustomTooltip from "../components/CustomTooltip";
 
 export default function Estimated() {
     const navigate = useNavigate();
@@ -28,7 +30,7 @@ export default function Estimated() {
 
     const [isAddressSelected, setIsAddressSelected] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [invalidAddress, setInvalidAddress] = useState(""); 
+    const [invalidAddress, setInvalidAddress] = useState("");
 
     const { findClosestBuilding } = useBuildingInsights(apiKey);
     const { findDataLayers } = useDataLayers(apiKey);
@@ -44,8 +46,6 @@ export default function Estimated() {
 
         const isValidBuildingAddress = hasStreet && hasStreetNumber && hasLocality && hasGeometry;
 
-        const placeTypes = place
-        
         const locationData = {
             geo: [
                 place?.geometry?.location.lat(),
@@ -61,7 +61,7 @@ export default function Estimated() {
 
         const fullAddress = formatFullAddress(locationData);
 
-          if (!isValidBuildingAddress) {
+        if (!isValidBuildingAddress) {
             setIsAddressSelected(false);
             setInvalidAddress(fullFormattedAddress);
             alert(`${fullAddress} is not a valid building address.Please enter a valid address with a street number.`);
@@ -95,115 +95,116 @@ export default function Estimated() {
     };
 
     return (
-        <div
-            style={{
-                height: "100vh",
-                backgroundImage: "url(assets/img/hero-section.png)",
-                backgroundSize: "cover",
-                backgroundPosition: "center"
-            }}
-        >
-            <div className="position-absolute text-white d-flex flex-column  align-items-center text-center px-3" style={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                <h1 className="mb-2 mt-2 fw-bold" style={{ fontSize: '40px', textShadow: '1px 1px 3px rgba(0, 0, 0, 0.7)' }}>
-                    {HEADLINE_TEXT}
-                </h1>
-                <div className="container mt-3 mb-4">
-                    <div className="row justify-content-center">
-                        <div className="col-md-8 d-flex flex-column flex-sm-row align-items-center justify-content-center">
-                            <Autocomplete
-                                apiKey={apiKey}
-                                onPlaceSelected={handlePlaceSelection}
-                                className="form-control mb-2 mb-sm-0 me-sm-2"
-                                placeholder={ADDRESS_PLACEHOLDER}
-                                options={{ types: ['address'] }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') e.preventDefault();
-                                }}
-                            />
-                            <div className="tooltip-wrapper">
+        <>
+            <div className="container-with-img bg-of-page">
+                {/* Text Section */}
+                <div className="d-flex justify-content-center align-items-center content-bg" >
+                    <h1 className="fw-bold text-white">
+                        {HEADLINE_TEXT}
+                    </h1>
+                </div>
+
+                {/* Wrapper */}
+                <div>
+                    {/* Seach Input and Button Section */}
+                    <div className="d-flex justify-content-center content-bg">
+                        <Autocomplete
+                            apiKey={apiKey}
+                            onPlaceSelected={handlePlaceSelection}
+                            className="form-control mb-2 mb-sm-0 me-sm-2"
+                            placeholder={ADDRESS_PLACEHOLDER}
+                            options={{ types: ['address'] }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.preventDefault();
+                            }}
+                        />
+
+                        <CustomTooltip title={TOOL_TIPS.getStarted} arrow>
+                            <span style={{ display: 'inline-block' }}>
                                 <button
                                     onClick={handleSubmit}
                                     className="button-elemented"
                                     disabled={!isAddressSelected || loading}
                                     style={{
                                         opacity: isAddressSelected ? 1 : 0.5,
-                                        pointerEvents: isAddressSelected ? 'auto' : 'none'
+                                        pointerEvents: isAddressSelected ? 'auto' : 'none',
+                                        cursor: isAddressSelected ? 'pointer' : 'not-allowed'
                                     }}
                                 >
                                     {loading ? "Loading..." : "Get Started"}
                                 </button>
-                                <div className="tooltip-text">
-                                    {TOOL_TIPS.getStarted}
-                                </div>
-                            </div>
-                        </div>
+                            </span>
+                        </CustomTooltip>
+
                     </div>
-                    <div className="transparent-box mt-3">
-                    <ul className="text-start">
-                        {INTRO_LIST.map((item, index) => (
-                            <li key={index}>{item}</li>
-                        ))}
-                    </ul>
-                    </div>
-                    <div className="transparent-box table-group mt-1">
-                        <div className="table-responsive">
-                            <table className="table table-bordered text-white transparent-table">
+
+                    {/* Content Section */}
+
+                    <div className="w-100 content-bg">
+                        <ol className="list-items light-color">
+                            {INTRO_LIST.map((item, index) => (
+                                <li key={index}> {item}</li>
+                            ))}
+                        </ol>
+                        <div className="table-section table-responsive">
+                            <table className="table table-bordered transparent-table">
                                 <thead>
                                     <tr>
-                                        <th style={{ color: "aliceblue" }}>{TABLE_1.title[0]}</th>
-                                        <th style={{ color: "aliceblue" }}>{TABLE_1.title[1]}</th>
+                                        <th >{TABLE_1.title[0]}</th>
+                                        <th>{TABLE_1.title[1]}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr style={{ width: '100%' }}>
-                                        <td style={{ width: '60%', textAlign: 'left' }}>
-                                            <div className="scrollable-hidden-scrollbar" style={{ color: "#ffffff" }}>
+                                    <tr>
+                                        <td>
+                                            <div className="light-color">
                                                 {TABLE_1.description}
                                             </div>
                                         </td>
-                                        <td style={{ width: '40%' }}>
-                                            <video height='auto' controls>
+                                        <td>
+                                            <video height="auto" controls>
                                                 <source src={TABLE_1.videoUrl} type="video/mp4" />
                                             </video>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <div className="table-responsive">
-                                <table className="table table-bordered text-white transparent-table">
-                                    <thead>
-                                        <tr>
-                                            <th style={{ color: "aliceblue" }}>{TABLE_2.title[0]}</th>
-                                            <th style={{ color: "aliceblue" }}>{TABLE_2.title[1]}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td style={{ color: '#ffffff' }}>
-                                                <ul className="text-start">
-                                                    {TABLE_2.provides.map((item, idx) => (
-                                                        <li key={idx}>{item}</li>
-                                                    ))}
-                                                </ul>
-                                            </td>
-                                            <td style={{ color: '#ffffff' }}>
-                                                <ul className="text-start">
-                                                    {TABLE_2.limitations.map((item, idx) => (
-                                                        <li key={idx}>{item}</li>
-                                                    ))}
-                                                </ul>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+
+                            <table className="table table-bordered  transparent-table">
+                                <thead>
+                                    <tr className="light-color">
+                                        <th>{TABLE_2.title[0]}</th>
+                                        <th>{TABLE_2.title[1]}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            {TABLE_2.provides.map((item, idx) => (
+                                                <span className="light-color" key={idx}>{item} <br /> </span>
+                                            ))}
+                                        </td>
+                                        <td>
+                                            {TABLE_2.limitations.map((item, idx) => (
+                                                <span className="light-color" key={idx}>{item} <br /></span>
+                                            ))}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div className="">
-                        {DISCLAIMER}
+
+                    {/* Disclaimer section */}
+
+                    <div className="disclaimer-text content-bg">
+                        <h6 className="fw-bold text-white">
+                            {DISCLAIMER}
+                        </h6>
                     </div>
                 </div>
+
             </div>
-        </div>
+        </>
     );
 }

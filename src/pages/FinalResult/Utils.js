@@ -1,4 +1,4 @@
- 
+
 export function showNumber(x) {
     return x.toLocaleString(undefined, { maximumFractionDigits: 1 });
 }

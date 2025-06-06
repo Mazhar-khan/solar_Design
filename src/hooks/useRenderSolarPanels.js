@@ -1,32 +1,34 @@
-import { useCallback } from 'react';
+import { useCallback, useContext } from 'react';
 import { createPalette, normalize, rgbToColor } from '../pages/FinalResult/Visualize'
 import { panelsPalette } from '../pages/FinalResult/Colors'
+import { AppContext } from '../context/Context';
 
 export const useRenderSolarPanels = ({
   solarPanelsState,
   setSolarPanels,
   showSolarPanels,
+  averageBill,
+  
 }) => {
+  const { buildingInsights, configId } = useContext(AppContext);
+
   const renderSolarPanels = useCallback(async (
     geometry,
-    buildingInsights,
     mapInstance,
     panelConfigOrRange
   ) => {
-    if (!geometry?.spherical || !buildingInsights?.solarPotential) {
-      console.error("Missing geometry or solar potential data.");
-      return;
-    }
 
     const { solarPotential } = buildingInsights;
     const palette = createPalette(panelsPalette).map(rgbToColor);
+    console.log("small")
 
     const minEnergy = solarPotential.solarPanels.at(-1)?.yearlyEnergyDcKwh || 0;
     const maxEnergy = solarPotential.solarPanels[0]?.yearlyEnergyDcKwh || 1;
-
-    let panelCount = panelConfigOrRange ?? solarPotential.solarPanels.length;
+    console.log("panelConfigOrRange", panelConfigOrRange)
+    let panelCount = configId ?? solarPotential.solarPanels.length;
+    console.log("panelCount", panelCount)
     const panelsToRender = solarPotential.solarPanels.slice(0, panelCount);
-
+    console.log("panelsToRender", panelsToRender)
     const newPanels = panelsToRender.map(panel => {
       const [w, h] = [solarPotential.panelWidthMeters / 2, solarPotential.panelHeightMeters / 2];
       const points = [
@@ -67,7 +69,7 @@ export const useRenderSolarPanels = ({
     // Set new panels
     newPanels.forEach(panel => panel.setMap(showSolarPanels ? mapInstance : null));
     setSolarPanels(newPanels);
-  }, [solarPanelsState, setSolarPanels, showSolarPanels]);
+  }, [buildingInsights, setSolarPanels, showSolarPanels, solarPanelsState,averageBill,]);
 
   return { renderSolarPanels };
 };

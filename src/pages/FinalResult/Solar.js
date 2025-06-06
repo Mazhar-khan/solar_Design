@@ -5,6 +5,8 @@ import proj4 from 'proj4';
 
 
 export async function findClosestBuilding(location, apiKey) {
+  console.log("location",location)
+  console.log("apiKey",apiKey)
   const qualities = ['HIGH', 'MEDIUM', 'LOW'];
 
   for (const quality of qualities) {

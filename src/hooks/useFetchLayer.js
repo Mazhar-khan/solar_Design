@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 // import { findClosestBuilding, getDataLayerUrls } from '../components/solar/Solar';
-import { findClosestBuilding,getDataLayerUrls } from '../pages/FinalResult/Solar';
+import { findClosestBuilding, getDataLayerUrls } from '../pages/FinalResult/Solar';
 // import { findClosestBuilding } from '../pages/FinalResult/Solar';
 // import { getLayer } from '../components/solar/Layer';
 import { getLayer } from '../pages/FinalResult/Layer';
