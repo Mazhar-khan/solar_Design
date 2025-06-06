@@ -24,13 +24,15 @@ export default function DataLayers() {
   const [isMonthlyFlux, setIsMonthlyFlux] = useState(true);
   const [showMonthlyHeatMap, setShowMonthlyHeatMap] = useState(false);
   const [showAnnualHeatMap, setShowAnnualHeatMap] = useState(true);
-  const [averageBill, setAverageBill] = useState(130);
+ 
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const currentMonthIndex = new Date().getMonth();
   const [selectedMonth, setSelectedMonth] = useState(monthNames[currentMonthIndex]);
   const [map, setMap] = useState(null);
-  const { completeAddress, buildingInsights, setConFigID } = useContext(AppContext);
+                
+  const { completeAddress, buildingInsights, setConFigID,defaultBill } = useContext(AppContext);
+   const [averageBill, setAverageBill] = useState(defaultBill);
   const [yearlyEnergy, setYearlyEnergy] = useState(0);
   const [showSolarPanels, setShowSolarPanels] = useState(false);
 
@@ -39,7 +41,8 @@ export default function DataLayers() {
   const [layer, setLayer] = useState(null);
   const [solarPanels, setSolarPanels] = useState([]);
   const [openSection, setOpenSection] = useState("null");
-  const [ isHomeCandiate, setIsHomeCandiate ] = useState(true)
+  const [isHomeCandiate, setIsHomeCandiate] = useState(true)
+  const [isPanellChange,setIsPanellChange] = useState(false)
 
   const [showProfileCard, setShowProfileCard] = useState(true);
   const [showSolarCard, setShowSolarCard] = useState(false);
@@ -76,7 +79,7 @@ export default function DataLayers() {
     setSolarPanels,
     showSolarPanels,
     averageBill,
-  
+
   });
 
   const clearOverlays = useCallback(() => {
@@ -137,7 +140,7 @@ export default function DataLayers() {
       setOpenSection(section);
       if (section === "section1") {
         setShowProfileCard(true);
-      
+
         setIsHomeCandiate(false)
         setShowSolarCard(false);
         setSolarPotential(true);
@@ -204,6 +207,8 @@ export default function DataLayers() {
   };
 
   useEffect(() => {
+    // setAverageBill(defaultBill); 
+    // const [averageBill, setAverageBill] = useState(130);
     const val = JSON.parse(localStorage.getItem('buildingInsights'));
     const panelConfig = val?.solarPotential?.solarPanelConfigs || [];
     setPanelConfigs(panelConfig);
@@ -234,7 +239,7 @@ export default function DataLayers() {
     const averageBill = Number(e.target.value);
     setAverageBill(averageBill);
     const updatedBill = getConfigId({ averageBill, buildingInsights })
-    console.log("updatedBill",updatedBill)
+    console.log("updatedBill", updatedBill)
   };
 
   const handleInputBlur = () => {
@@ -246,7 +251,7 @@ export default function DataLayers() {
   };
 
   useEffect(() => {
-    if (showSolarPanels && map && buildingInsights && libraries.geometry) {
+    if (map && buildingInsights && libraries.geometry) {
       const panelConfigOrRange = configId ?? buildingInsights?.solarPotential?.solarPanels?.length;
       renderSolarPanels(libraries.geometry, map, panelConfigOrRange);
     } else {
@@ -254,12 +259,7 @@ export default function DataLayers() {
       setSolarPanels([]);
     }
 
-
-  }, [showSolarPanels, hitPanelCount,averageBill]);
-
-  useEffect(() => {
-
-  })
+  }, [showSolarPanels, hitPanelCount, averageBill]);
 
   return (
     <>
@@ -308,6 +308,7 @@ export default function DataLayers() {
                         configId={configId}
                         buildingInsightss={buildingInsightss}
                         setHitPanelCount={setHitPanelCount}
+                        setIsPanellChange={setIsPanellChange}
                         panelCapacity={panelCapacity}
                         handleChange={handleChange}
                         showMonthlyHeatMap={showMonthlyHeatMap}

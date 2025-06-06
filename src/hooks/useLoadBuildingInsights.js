@@ -16,6 +16,7 @@ export const useLoadBuildingInsights = ({ renderSolarPanels, averageBill,hitPane
     dcToAcDerateInput,
   } = SOLAR_CONSTANTS;
 
+  
   const { getConfigId } = useConfigId();
 
 

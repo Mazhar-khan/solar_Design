@@ -14,6 +14,7 @@ export default function ToggleSection1({
     selectedMonth,
     clearOverlays,
     handleInputBlur,
+    setIsPanellChange,
     setSelectedMonth,
     monthNames,
     showAnnualHeatMap,
@@ -24,9 +25,9 @@ export default function ToggleSection1({
 
     const updateRangeFunc = (event) => {
         const val = Number(event.target.value);
-        console.log("val",val)
         setHitPanelCount(val)
         setConFigID(val);
+        setIsPanellChange(true)
     };
 
 

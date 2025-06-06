@@ -7,9 +7,10 @@ import { AppContext } from '../../context/Context';
 export default function First({ completeAddress, buildingInsights }) {
     const { configId } = useContext(AppContext);
     const getSolarSuitabilityRating = () => {
+        // debugger
         const sunshineHours = buildingInsights?.solarPotential?.maxSunshineHoursPerYear || 0;
         const roofArea = buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2 || 0;
-        const irradiance = buildingInsights?.solarPotential?.averageSolarIrradiance || 0; // kWh/m²/year
+        const irradiance = buildingInsights?.solarPotential?.wholeRoofStats?.sunshineQuantiles|| 0; // kWh/m²/year
 
         if (sunshineHours > 2000 && roofArea > 100 && irradiance > 1800) {
             return 'Great';
@@ -47,35 +48,17 @@ export default function First({ completeAddress, buildingInsights }) {
                 }}
             >
                 <div className="card-header">
-                    <i className="fas fa-home home-icon"></i>
-                    <span className="title mt-1">
+                    <i className="fas fa-home home-icon text-warning"></i>
+                    <span className="title mt-1 text-warning ">
                         {
                             completeAddress?.streetNumber + " " + completeAddress?.street
                         }
                     </span> <br />
                 </div>
-                <span>Your Home is {get} candidate</span>
+                <span className="value" style={{ fontWeight:"400",}} >Your Home is {get} candidate</span>
                 <hr />
                 <div className="card-body">
-                    <div className="data-row">
-                        <span>Annual Solar Intensity</span>
-                        <span className="value">
-                            {buildingInsights?.solarPotential?.maxSunshineHoursPerYear
-                                ? `${Math.round(buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1))} hr`
-                                : 'N/A'}
-                        </span>
-                    </div>
-                    <div className="data-row">
-                        <span>Total Roof Area Approx</span>
-                        <span className="value">
-                            {Math.round(buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2)) || 'N/A'} m²
-                        </span>
-                    </div>
-                    <div className="data-row">
-                        <span>System Size Category</span>
-                        <span className="value">{getSystemSizeCategory()}</span>
-                    </div>
-                    <div className="info-icon data-row" style={{ display: "flex", flexDirection: "row" }}>
+                      <div className="info-icon data-row" style={{ display: "flex", flexDirection: "row" }}>
                         <span>About this data</span>
                         <span>
                             <Tooltip
@@ -95,6 +78,59 @@ export default function First({ completeAddress, buildingInsights }) {
 
                         </span>
                     </div>
+                    <div className="data-row">
+                        <span>Annual Solar Intensity</span>
+                        <span className="value">
+                            {buildingInsights?.solarPotential?.maxSunshineHoursPerYear
+                                ? `${Math.round(buildingInsights.solarPotential.maxSunshineHoursPerYear.toFixed(1))} hr`
+                                : 'N/A'}
+                        </span>
+                    </div>
+                    <div className="data-row">
+                        <span>Total Roof Area Approx</span>
+                        <span className="value">
+                            {Math.round(buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2?.toFixed(2)) || 'N/A'} m²
+                        </span>
+                    </div>
+                    <div className="data-row">
+                        <span>Small system</span>
+                        <span className="value">6kW</span>
+                    </div>
+
+                    <div className="data-row">
+                        <span>Medium system</span>
+                        <span className="value">12kW</span>
+                    </div>
+
+                    <div className="data-row">
+                        <span>Large system</span>
+                        <span className="value">18kW</span>
+                    </div>
+
+                    <div className="data-row">
+                        <span>Large system</span>
+                        <span className="value">18kW</span>
+                    </div>
+                    {/* <div className="info-icon data-row" style={{ display: "flex", flexDirection: "row" }}>
+                        <span>About this data</span>
+                        <span>
+                            <Tooltip
+                                title={
+                                    <span style={{ fontSize: '12px' }}>
+                                        Based on daily readings of solar energy for your location, accounting for cloud cover and shading from trees and other structures.<br />
+                                        To be revised. Also, this value factors in the azimuth of the property’s roof-faces/segments, right? Does it also factor in roof area?
+                                    </span>
+                                }
+                                arrow
+                                placement="top-start"
+                            >
+                                <IconButton size="small" style={{ marginTop: "-5px", color: 'black' }} >
+                                    <InfoOutlinedIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+
+                        </span>
+                    </div> */}
 
                     {/* <div className="data-row">
                         <span>Max panel count</span>
@@ -118,13 +154,14 @@ export default function First({ completeAddress, buildingInsights }) {
                     </div> */}
                 </div>
             </div>
-            <div className="insights-card position-absolute" style={{ bottom: "15px", left: "300px", zIndex: 1000 }}>
+            <div className="insights-card position-absolute bg-white" 
+            style={{ bottom: "15px", left: "300px", zIndex: 1000, padding:'20px',borderRadius:'10px' }}>
                 <div className="card-header">
                     <i className="fas fa-layer-group icon"></i>
                     <span className="title">Solar Intensity Key</span>
                 </div>
                 <hr />
-                <div className="card-body" style={{ width: '100%' }} >
+                <div className="card-body bg-white" style={{ width: '100%' }} >
                     <div style={{ display: "flex", alignItems: "center" }}>
                         <span style={{ marginRight: "10px" }} >Shaday</span>
                         <div class="sun-gradient" style={{ flex: 1, height: '10px' }} ></div>

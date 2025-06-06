@@ -1,5 +1,6 @@
 import React, { useState, useContext, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
+import { bill } from "../../constants/defaultBill";
 
 import Autocomplete from 'react-google-autocomplete';
 import { AppContext } from '../../context/Context';
@@ -25,7 +26,7 @@ export default function Estimated() {
         setBuildingInsights,
         setUserAddress,
         setCompleteAddress,
-        setDataLayers
+        setDataLayers,storeBill
     } = useContext(AppContext);
 
     const [isAddressSelected, setIsAddressSelected] = useState(false);
@@ -36,6 +37,7 @@ export default function Estimated() {
     const { findDataLayers } = useDataLayers(apiKey);
 
     const handlePlaceSelection = useCallback(async (place) => {
+        console.log("place", place)
         const addressComponents = place?.address_components || [];
         const fullFormattedAddress = place?.formatted_address || "the entered address";
 
@@ -59,12 +61,20 @@ export default function Estimated() {
             streetNumber: getComponent(addressComponents, "street_number")
         };
 
+        debugger
+        const userState = getComponent(addressComponents, "administrative_area_level_1");
+        const user =place.formatted_address.split(",")[2].split(" ")[1]
+
+        const matchedBill = bill.find(item => item.State === user);
+        // console.log("Default Bill:", Math.round(matchedBill?.defaultBill));
+        storeBill(Math.round(matchedBill?.defaultBill))
+
         const fullAddress = formatFullAddress(locationData);
 
         if (!isValidBuildingAddress) {
             setIsAddressSelected(false);
             setInvalidAddress(fullFormattedAddress);
-            alert(`${fullAddress} is not a valid building address.Please enter a valid address with a street number.`);
+            // alert(`${fullAddress} is not a valid building address.Please enter a valid address with a street number.`);
             return;
         }
 
@@ -119,6 +129,8 @@ export default function Estimated() {
                             }}
                         />
 
+
+
                         <CustomTooltip title={TOOL_TIPS.getStarted} arrow>
                             <span style={{ display: 'inline-block' }}>
                                 <button
@@ -137,6 +149,12 @@ export default function Estimated() {
                         </CustomTooltip>
 
                     </div>
+                    {invalidAddress && (
+                        <div className="text-danger mt-2" style={{ fontSize: '0.9rem', marginLeft: "24%" }}>
+                            Please enter a valid address with a street number.
+                        </div>
+                    )}
+
 
                     {/* Content Section */}
 

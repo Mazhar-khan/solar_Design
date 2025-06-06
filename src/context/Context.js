@@ -16,7 +16,8 @@ export const AppProvider = ({ children }) => {
     const [withSolarCost20, setWithSolarCost20] = useState(null);
     const [withSolarCost30, setWithSolarCost30] = useState(null);
     const [withSolarCost, setWithSolarCost] = useState(null);
-     const [saving, setSaving] = useState(null);
+    const [saving, setSaving] = useState(null);
+    const [defaultBill, setDefaultBill] = useState(null)
 
     useEffect(() => {
         const storedInsights = localStorage.getItem('buildingInsights');
@@ -33,6 +34,7 @@ export const AppProvider = ({ children }) => {
         const costwithoutsolar30 = localStorage.getItem('costWithoutsolar30');
         const costwithoutsolar = localStorage.getItem('costWithoutsolar');
         const savingVar = localStorage.getItem('savings');
+        const Bill = localStorage.getItem('Bill');
 
         if (storedInsights) setBuildingInsightsState(JSON.parse(storedInsights));
         if (storedLayers) setDataLayersState(JSON.parse(storedLayers));
@@ -48,6 +50,7 @@ export const AppProvider = ({ children }) => {
         if (costwithoutsolar30) setWithSolarCost30(localStorage.getItem('costWithoutsolar30'));
         if (costwithoutsolar) setWithSolarCost(localStorage.getItem('costWithoutsolar'));
         if (savingVar) setSaving(localStorage.getItem('savings'));
+        if (Bill) setDefaultBill(localStorage.getItem('Bill'));
     }, []);
 
     const setBuildingInsights = (value) => {
@@ -115,9 +118,14 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem("costWithoutsolar", JSON.stringify(value))
     }
 
-     const savingFun = (value) => {
+    const savingFun = (value) => {
         setSaving(value);
         localStorage.setItem("savings", JSON.stringify(value))
+    }
+
+    const storeBill = (value) => {
+        setDefaultBill(value);
+        localStorage.setItem("Bill", JSON.stringify(value))
     }
 
     return (
@@ -150,7 +158,9 @@ export const AppProvider = ({ children }) => {
                 totalCostwithoutSolar,
                 withSolarCost,
                 savingFun,
-                saving
+                saving,
+                storeBill,
+                defaultBill
             }}
         >
             {children}

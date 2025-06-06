@@ -8,6 +8,7 @@ import { AppContext } from "../../context/Context";
 
 
 export default function Second() {
+  
     const { solarInstallationSize, installationCost, configId, yearlyEnergy, yearlyEnergyCover,
         withSolarCost10, withSolarCost20, withSolarCost30, saving } = useContext(AppContext);
 
@@ -40,6 +41,15 @@ export default function Second() {
             textStyle: { fontSize: 12 },
         },
     };
+
+        const getSystemSizeCategory = () => {
+        const maxPanelCount = configId;
+        if (!maxPanelCount) return 'N/A';
+        if (maxPanelCount <= 12) return 'Small';
+        if (maxPanelCount <= 28) return 'Medium';
+        if (maxPanelCount <= 60) return 'Large';
+        return 'Very Large';
+    };
     return (
         <>
             <div
@@ -69,6 +79,9 @@ export default function Second() {
                 {/* Energy Production */}
                 <div className="section-title">Energy Production</div>
                 <div className="data-row"><span>Installation Size</span><span className="value">{solarInstallationSize} KW</span></div>
+                <div className="data-row"><span>System Size Category</span><span className="value">{getSystemSizeCategory()}</span></div>
+
+                 
                 <div className="data-row"><span>Number of Panels</span><span className="value">{configId} Panels</span></div>
                 <div className="data-row"><span>Annual Energy Production</span><span className="value">{yearlyEnergy} kWh</span></div>
                 <div className="data-row"><span>% Household Electricity Covered</span><span className="value">{yearlyEnergyCover.toFixed(2)} %</span></div>
