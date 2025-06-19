@@ -1,6 +1,6 @@
 import { useCallback, useContext } from 'react';
-import { createPalette, normalize, rgbToColor } from '../pages/FinalResult/Visualize'
-import { panelsPalette } from '../pages/FinalResult/Colors'
+import { createPalette, normalize, rgbToColor } from '../utils/Visualize'
+import { panelsPalette } from '../constants/Colors'
 import { AppContext } from '../context/Context';
 
 export const useRenderSolarPanels = ({
@@ -8,27 +8,22 @@ export const useRenderSolarPanels = ({
   setSolarPanels,
   showSolarPanels,
   averageBill,
-  
+  hitPanelCount
 }) => {
   const { buildingInsights, configId } = useContext(AppContext);
 
   const renderSolarPanels = useCallback(async (
     geometry,
-    mapInstance,
-    panelConfigOrRange
+    mapInstance
   ) => {
-
+    console.log("configId", configId)
     const { solarPotential } = buildingInsights;
     const palette = createPalette(panelsPalette).map(rgbToColor);
-    console.log("small")
 
     const minEnergy = solarPotential.solarPanels.at(-1)?.yearlyEnergyDcKwh || 0;
     const maxEnergy = solarPotential.solarPanels[0]?.yearlyEnergyDcKwh || 1;
-    console.log("panelConfigOrRange", panelConfigOrRange)
     let panelCount = configId ?? solarPotential.solarPanels.length;
-    console.log("panelCount", panelCount)
     const panelsToRender = solarPotential.solarPanels.slice(0, panelCount);
-    console.log("panelsToRender", panelsToRender)
     const newPanels = panelsToRender.map(panel => {
       const [w, h] = [solarPotential.panelWidthMeters / 2, solarPotential.panelHeightMeters / 2];
       const points = [
@@ -69,7 +64,7 @@ export const useRenderSolarPanels = ({
     // Set new panels
     newPanels.forEach(panel => panel.setMap(showSolarPanels ? mapInstance : null));
     setSolarPanels(newPanels);
-  }, [buildingInsights, setSolarPanels, showSolarPanels, solarPanelsState,averageBill,]);
+  }, [buildingInsights, setSolarPanels, showSolarPanels, solarPanelsState, averageBill, hitPanelCount]);
 
   return { renderSolarPanels };
 };

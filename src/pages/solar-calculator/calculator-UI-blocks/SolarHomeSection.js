@@ -1,13 +1,15 @@
 import React, { useContext } from 'react';
-import { AppContext } from '../../context/Context';
+import { AppContext } from '../../../context/Context';
+import { SOLAR_CONSTANTS } from '../../../constants/solarConstants';
+// import { useConfigId } from "../../hooks/useConfigId";
+import { useConfigId } from '../../../hooks/useConfigId';
 
-export default function ToggleSection1({
+export default function SolarHomeSection({
     averageBill,
     handleInputChange,
     showSolarPanels,
     toggleSolarPanels,
     buildingInsightss,
-    panelCapacity,
     handleChange,
     showMonthlyHeatMap,
     handleMonthlyToggle,
@@ -21,15 +23,32 @@ export default function ToggleSection1({
     toggleAnnualHeatMap,
     setHitPanelCount
 }) {
-    const { configId, setConFigID } = useContext(AppContext);
+    const { configId, setConFigID, buildingInsights, defaultBill } = useContext(AppContext);
+    const {
+        panelCapacityWattsInput,
+        panelCapacityWatts,
+        energyCostPerKwhInput,
+        installationCostPerWatt,
+        dcToAcDerateInput,
+    } = SOLAR_CONSTANTS;
+    const { getConfigId } = useConfigId();
 
     const updateRangeFunc = (event) => {
         const val = Number(event.target.value);
+        console.log("val", val);
         setHitPanelCount(val)
         setConFigID(val);
         setIsPanellChange(true)
+        // updateConfig(val);
     };
 
+    const updateConfig = (val) => {
+        const averageBill = val;
+        console.log("averageBill",averageBill)
+        const configId = getConfigId({ averageBill });
+        setConFigID(configId);
+        console.log("configId", configId)
+    }
 
 
     return (
@@ -50,6 +69,7 @@ export default function ToggleSection1({
                             max={500}
                             step={10}
                             style={{ height: '44px' }}
+
                         />
                         <span className="input-group-text" style={{ height: '44px' }}>$</span>
                     </div>
@@ -148,13 +168,23 @@ export default function ToggleSection1({
                                 Average Monthly Intensity
                             </label>
                             <div className="form-check form-switch" style={{ padding: 0 }}>
+                                {/* <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    style={{ width: '2rem', height: '1rem', cursor: 'pointer' }}
+                                    checked={showMonthlyHeatMap}
+                                    onChange={ handleMonthlyToggle}
+                                /> */}
+
                                 <input
                                     className="form-check-input"
                                     type="checkbox"
                                     style={{ width: '2rem', height: '1rem', cursor: 'pointer' }}
                                     checked={showMonthlyHeatMap}
-                                    onChange={(e) => handleMonthlyToggle(e.target.checked)}
+                                    onChange={handleMonthlyToggle}
+                                    disabled={showAnnualHeatMap}
                                 />
+
                             </div>
                         </div>
                         <span className={`fw-medium ${showMonthlyHeatMap ? 'text-warning' : 'text-secondary'}`}>
@@ -178,7 +208,6 @@ export default function ToggleSection1({
                                 className="form-select"
                                 value={selectedMonth}
                                 onChange={(e) => {
-                                    clearOverlays();
                                     setSelectedMonth(e.target.value);
                                 }}
                             >
@@ -200,6 +229,7 @@ export default function ToggleSection1({
                             <label className="form-label fw-semibold mb-1">
                                 Average Annual Intensity
                             </label>
+
                             <div className="form-check form-switch" style={{ padding: 0 }}>
                                 <input
                                     className="form-check-input"
@@ -207,6 +237,7 @@ export default function ToggleSection1({
                                     style={{ width: '2rem', height: '1rem', cursor: 'pointer' }}
                                     checked={showAnnualHeatMap}
                                     onChange={toggleAnnualHeatMap}
+                                    disabled={showMonthlyHeatMap}
                                 />
                             </div>
                         </div>

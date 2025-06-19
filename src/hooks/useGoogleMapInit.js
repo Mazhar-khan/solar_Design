@@ -1,16 +1,13 @@
-// File: hooks/useInitializeMap.js
-import { useEffect } from 'react';
+import { useEffect, useContext } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
+import { AppContext } from '../context/Context';
 
-export const useInitializeMap = ({
-  mapRef,
-  completeAddress,
-  setLibraries,
-  setMap,
-  loadBuildingInsights,
-  apiKey
-}) => {
+export const useInitializeMap = ({ mapRef, setLibraries, setMap, renderSolarPanels }) => {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const { completeAddress } = useContext(AppContext);
+
   useEffect(() => {
+
     async function initialize() {
       const loader = new Loader({
         apiKey,
@@ -22,29 +19,37 @@ export const useInitializeMap = ({
         loader.importLibrary('maps'),
         loader.importLibrary('places'),
       ]);
+      const center = {
+        lat: completeAddress?.geo[0],
+        lng: completeAddress?.geo[1]
+      }
+      const staticMapURL = `https://maps.googleapis.com/maps/api/staticmap?center=${center.lat},${center.lng}&zoom=20&size=800x600&maptype=satellite&key=${apiKey}`;
 
-      const mapInstance = new maps.Map(mapRef.current, {
-        center: {
-          lat: completeAddress?.geo[0],
-          lng: completeAddress?.geo[1]
-        },
-        zoom: 20,
-        tilt: 0,
-        mapTypeId: 'satellite',
-        mapTypeControl: false,
-        fullscreenControl: false,
-        rotateControl: false,
-        streetViewControl: false,
-        zoomControl: true,
-      });
-
-      setLibraries({ geometry, maps, places });
-      setMap(mapInstance);
-      await loadBuildingInsights(geometry, mapInstance);
+      mapRef.current.innerHTML = `<img src="${staticMapURL}" alt="Static Map" style="width:100%; height:100%;" />`;
+      // const mapInstance = new maps.Map(mapRef.current, {
+      //   center: {
+      //     lat: completeAddress?.geo[0],
+      //     lng: completeAddress?.geo[1]
+      //   },
+      //   zoom: 20,
+      //   tilt: 0,
+      //   mapTypeId: 'satellite',
+      //   mapTypeControl: false,
+      //   fullscreenControl: false,
+      //   rotateControl: false,
+      //   streetViewControl: false,
+      //   zoomControl: true,
+      // });
+      setMap(null);
+      setLibraries({});
+      // setLibraries({ geometry, maps, places });
+      // setMap(mapInstance);
+      // await renderSolarPanels(geometry, mapInstance)
     }
 
     if (mapRef?.current && completeAddress?.geo) {
       initialize();
     }
+
   }, [mapRef, completeAddress]);
 };

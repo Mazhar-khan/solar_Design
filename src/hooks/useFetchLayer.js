@@ -1,43 +1,39 @@
-import { useEffect } from 'react';
-// import { findClosestBuilding, getDataLayerUrls } from '../components/solar/Solar';
-import { findClosestBuilding, getDataLayerUrls } from '../pages/FinalResult/Solar';
-// import { findClosestBuilding } from '../pages/FinalResult/Solar';
-// import { getLayer } from '../components/solar/Layer';
-import { getLayer } from '../pages/FinalResult/Layer';
+import { useEffect, useContext } from 'react';
+import { AppContext } from '../context/Context';
+import { useDataLayerUrls } from './useDataLayers';
+import { useGetLayer } from './useSolarLayerFetcher';
 
 export function useFetchLayer({
   map,
   layerId,
-  clearOverlays,
-  isMonthlyFlux,
-  selectedMonth,
-  completeAddress,
   geometryLib,
   setLayer,
-  setShowRoofOnly,
-  setYearlyEnergy,
+  showRoofOnly,
+  overlaysRef,
+  setLoading,
+  showAnnualHeatMap,
+  showMonthlyHeatMap,
+  selectedMonth,
+  setSelectedMonth
 }) {
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const selectedMonthIndex = monthNames.indexOf(selectedMonth);
-  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
+  const { buildingInsights } = useContext(AppContext);
+  const { getDataLayerUrls } = useDataLayerUrls();
+  const { getLayer } = useGetLayer();
 
   useEffect(() => {
-    if (!map || !geometryLib) return;
-
+    if (!map || !geometryLib || !buildingInsights) return;
     const fetchLayer = async () => {
+
       try {
-        clearOverlays();
+        setLoading(true);
         setLayer(null);
 
-        setShowRoofOnly(['annualFlux', 'monthlyFlux', 'hourlyShade'].includes(layerId));
         map.setMapTypeId(layerId === 'rgb' ? 'roadmap' : 'satellite');
-
         if (layerId === 'none') return;
 
-        const buildingInsightss = await findClosestBuilding(completeAddress, GOOGLE_MAPS_API_KEY);
-        const center = buildingInsightss?.center;
-        const ne = buildingInsightss.boundingBox.ne;
-        const sw = buildingInsightss.boundingBox.sw;
+        const center = buildingInsights?.center;
+        const ne = buildingInsights.boundingBox.ne;
+        const sw = buildingInsights.boundingBox.sw;
 
         const diameter = geometryLib.spherical.computeDistanceBetween(
           { lat: ne.latitude, lng: ne.longitude },
@@ -49,24 +45,51 @@ export function useFetchLayer({
           map.setCenter({ lat: center[0], lng: center[1] });
         }
 
-        const response = await getDataLayerUrls(center, radius, GOOGLE_MAPS_API_KEY);
-        let loadedLayer;
+        // Clear previous overlays
+        if (overlaysRef.current) {
+          overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+          overlaysRef.current = [];
+        }
+        const response = await getDataLayerUrls(center, radius, buildingInsights);
 
-        if (isMonthlyFlux) {
-          const monthKey = `monthlyFlux-${selectedMonthIndex}-${Date.now()}`;
-          loadedLayer = await getLayer('monthlyFlux', response, GOOGLE_MAPS_API_KEY, selectedMonthIndex);
-        } else {
-          loadedLayer = await getLayer('annualFlux', response, GOOGLE_MAPS_API_KEY);
+        //monthly heatmap and annual heatmap
+        if (showAnnualHeatMap && !showMonthlyHeatMap) {
+          const layerRes = await getLayer('annualFlux', response);
+          const bounds = layerRes.bounds;
+
+          const overlays = layerRes.render(showRoofOnly).map((canvas) => {
+            const overlay = new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
+            overlay.setMap(map);
+            return overlay;
+          });
+          overlaysRef.current = overlays;
+        } else if (showMonthlyHeatMap && !showAnnualHeatMap) {
+          const monthList =
+            [
+              "january", "february", "march", "april", "may", "june",
+              "july", "august", "september", "october", "november", "december"
+            ]
+          const monthIndex = monthList.findIndex((e) => e === selectedMonth);
+          const layerRes = await getLayer('monthlyFlux', response);
+          const bounds = layerRes.bounds;
+          const overlays = layerRes.render(showRoofOnly, monthIndex, 0).map((canvas, index) => {
+            const overlay = new window.google.maps.GroundOverlay(canvas.toDataURL(), bounds);
+            overlay.setMap(index === monthIndex ? map : null);
+            return overlay;
+          });
+          overlaysRef.current = overlays;
         }
 
-        const defaultEnergy = buildingInsightss.solarPotential.maxSunshineHoursPerYear;
-        setYearlyEnergy(defaultEnergy);
-        setLayer(loadedLayer);
+        // hide show annual heatmap base on toggle button
       } catch (error) {
         console.error('❌ Data layer fetch error:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchLayer();
-  }, [map, layerId, clearOverlays, isMonthlyFlux, selectedMonth, completeAddress, geometryLib]);
+  }, [map, layerId, geometryLib, showAnnualHeatMap, showMonthlyHeatMap, selectedMonth]);
+
+
 }

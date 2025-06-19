@@ -17,7 +17,8 @@ export const AppProvider = ({ children }) => {
     const [withSolarCost30, setWithSolarCost30] = useState(null);
     const [withSolarCost, setWithSolarCost] = useState(null);
     const [saving, setSaving] = useState(null);
-    const [defaultBill, setDefaultBill] = useState(null)
+    const [defaultBill, setDefaultBill] = useState(null);
+    const [energypriceperKW, setEnergypriceperKW] = useState(null);
 
     useEffect(() => {
         const storedInsights = localStorage.getItem('buildingInsights');
@@ -32,6 +33,7 @@ export const AppProvider = ({ children }) => {
         const costwithoutsolar10 = localStorage.getItem('costWithoutsolar10');
         const costwithoutsolar20 = localStorage.getItem('costWithoutsolar20');
         const costwithoutsolar30 = localStorage.getItem('costWithoutsolar30');
+        const energyPrice = localStorage.getItem('costWithoutsolar');
         const costwithoutsolar = localStorage.getItem('costWithoutsolar');
         const savingVar = localStorage.getItem('savings');
         const Bill = localStorage.getItem('Bill');
@@ -124,6 +126,11 @@ export const AppProvider = ({ children }) => {
     }
 
     const storeBill = (value) => {
+        setDefaultBill(value);
+        localStorage.setItem("Bill", JSON.stringify(value))
+    }
+
+    const storeEnergyPrice = (value) => {
         setDefaultBill(value);
         localStorage.setItem("Bill", JSON.stringify(value))
     }

@@ -1,13 +1,13 @@
 import react, { useContext } from 'react';
 import { Chart } from "react-google-charts";
 // import { AppContext } from '../../context/Context';
-import { AppContext } from "../../context/Context";
+import { AppContext } from "../../../context/Context";
 
 
 
 
 
-export default function Second() {
+export default function BuildingInsightSecondCard() {
   
     const { solarInstallationSize, installationCost, configId, yearlyEnergy, yearlyEnergyCover,
         withSolarCost10, withSolarCost20, withSolarCost30, saving } = useContext(AppContext);
@@ -84,7 +84,7 @@ export default function Second() {
                  
                 <div className="data-row"><span>Number of Panels</span><span className="value">{configId} Panels</span></div>
                 <div className="data-row"><span>Annual Energy Production</span><span className="value">{yearlyEnergy} kWh</span></div>
-                <div className="data-row"><span>% Household Electricity Covered</span><span className="value">{yearlyEnergyCover.toFixed(2)} %</span></div>
+                <div className="data-row"><span>% Household Electricity Covered</span><span className="value">{yearlyEnergyCover?.toFixed(2)} %</span></div>
 
                 {/* Cost Savings */}
                 <div className="section-title">Cost Savings</div>

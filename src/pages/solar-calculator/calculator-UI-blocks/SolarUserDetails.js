@@ -1,4 +1,4 @@
-export default function ToggleSection2({
+export default function SolarUserDetails({
     showSolarPotential,formData,setFormData,isFormComplete
 }) {
     return (

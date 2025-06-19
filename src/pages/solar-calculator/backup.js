@@ -1,23 +1,17 @@
 import { useEffect, useState, useContext, useRef, useCallback } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
 import { useRenderSolarPanels } from '../../hooks/useRenderSolarPanels';
 import { useLoadBuildingInsights } from '../../hooks/useLoadBuildingInsights';
 import { useInitializeMap } from '../../hooks/useGoogleMapInit';
 import { useFetchLayer } from '../../hooks/useFetchLayer';
 import { AppContext } from '../../context/Context';
-import First from '../ui/First';
-import Second from '../ui/Second';
-import ToggleSection2 from '../ui/ToggleSection2';
-import ToggleSection1 from '../ui/ToggleSection1';
+import SolarUserDetails from './calculator-UI-blocks/SolarUserDetails';
+import SolarHomeSection from './calculator-UI-blocks/SolarHomeSection'
+import BuildingInsightFirstCard from './calculator-UI-blocks/BuildingInsightFirstCard';
+import BuildingInsightSecondCard from './calculator-UI-blocks/BuildingInsightSecondCard';
 import { useRenderHeatmapOverlay } from '../../hooks/useRenderHeatmapOverlay';
-import { findSolarConfig } from './Utils';
-import { getConFigId } from '../../utils/getConFigId';
 import { useConfigId } from '../../hooks/useConfigId';
 
-
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
-
-export default function DataLayers() {
+export default function SolarCalculator() {
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
 
@@ -32,7 +26,7 @@ export default function DataLayers() {
   const [map, setMap] = useState(null);
                 
   const { completeAddress, buildingInsights, setConFigID,defaultBill } = useContext(AppContext);
-   const [averageBill, setAverageBill] = useState(defaultBill);
+  const [averageBill, setAverageBill] = useState(defaultBill);
   const [yearlyEnergy, setYearlyEnergy] = useState(0);
   const [showSolarPanels, setShowSolarPanels] = useState(false);
 
@@ -53,46 +47,34 @@ export default function DataLayers() {
   const [panelConfig, setPanelConfig] = useState(undefined);
 
   const [buildingInsightss, setBuildingInsightss] = useState();
-  const [panelRange, setPanelRange] = useState();
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "" });
 
-  //Custom Values
-  const [monthlyAverageEnergyBill, setMonthlyAverageEnergyBill] = useState(300);
-  const [energyCostPerKwhInput, setEnergyCostPerKwhInput] = useState(0.32);
-  const [panelCapacityWattsInput, setPanelCapacityWattsInput] = useState(250)
-  const [dcToAcDerateInput, setDcToAcDerateInput] = useState(0.85)
-  const [localConfigId, setLocalConfigId] = useState()
-
-  // === Derived states ===
-  const [monthlyKwhEnergyConsumption, setMonthlyKwhEnergyConsumption] = useState(0);
-  const [yearlyKwhEnergyConsumption, setYearlyKwhEnergyConsumption] = useState(1700);
-  const [panelCapacityRatio, setPanelCapacityRatio] = useState(1);
   const [configId, setConfigId] = useState(null);
   const [panelConfigs, setPanelConfigs] = useState([]);
 
   const [hitPanelCount, setHitPanelCount] = useState(null)
 
   const isFormComplete = Object.values(formData).every((val) => val.trim() !== "");
-
+//console.log("1")
   const { renderSolarPanels } = useRenderSolarPanels({
     solarPanelsState: solarPanels,
     setSolarPanels,
     showSolarPanels,
     averageBill,
-
   });
-
+//console.log("2")
   const clearOverlays = useCallback(() => {
+    console.log("2")
     overlaysRef.current?.forEach(overlay => overlay.setMap(null));
     overlaysRef.current = [];
   }, []);
-
+// console.log("3")
   const { loadBuildingInsights } = useLoadBuildingInsights({
     renderSolarPanels,
     averageBill,
     hitPanelCount
   });
-
+// console.log("4")
   useFetchLayer({
     map,
     layerId,
@@ -105,7 +87,7 @@ export default function DataLayers() {
     setShowRoofOnly,
     setYearlyEnergy,
   });
-
+// console.log("5")
   useInitializeMap({
     mapRef,
     completeAddress,
@@ -114,7 +96,7 @@ export default function DataLayers() {
     loadBuildingInsights,
     apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   });
-
+// console.log("6")
   useRenderHeatmapOverlay({
     map,
     layer,
@@ -207,39 +189,16 @@ export default function DataLayers() {
   };
 
   useEffect(() => {
-    // setAverageBill(defaultBill); 
-    // const [averageBill, setAverageBill] = useState(130);
+    console.log("7")
     const val = JSON.parse(localStorage.getItem('buildingInsights'));
     const panelConfig = val?.solarPotential?.solarPanelConfigs || [];
     setPanelConfigs(panelConfig);
   }, []);
 
-  // useEffect(() => {
-  //   const monthlyKwh = averageBill / energyCostPerKwhInput;
-  //   const yearlyKwh = monthlyKwh * 12;
-  //   const panelCapacityRatio = panelCapacityWattsInput / 400;
-
-  //   setMonthlyKwhEnergyConsumption(monthlyKwh);
-  //   setYearlyKwhEnergyConsumption(yearlyKwh);
-  //   setPanelCapacityRatio(panelCapacityRatio);
-
-  //   if (panelConfigs.length > 0) {
-  //     const configId = findSolarConfig(
-  //       panelConfigs,
-  //       yearlyKwh,
-  //       panelCapacityRatio,
-  //       dcToAcDerateInput
-  //     );
-  //     setConfigId(configId);
-  //   }
-  // }, [averageBill, energyCostPerKwhInput, panelCapacityWattsInput, dcToAcDerateInput, panelConfigs]);
-
-
   const handleInputChange = (e) => {
     const averageBill = Number(e.target.value);
     setAverageBill(averageBill);
     const updatedBill = getConfigId({ averageBill, buildingInsights })
-    console.log("updatedBill", updatedBill)
   };
 
   const handleInputBlur = () => {
@@ -251,6 +210,7 @@ export default function DataLayers() {
   };
 
   useEffect(() => {
+    console.log("8")
     if (map && buildingInsights && libraries.geometry) {
       const panelConfigOrRange = configId ?? buildingInsights?.solarPotential?.solarPanels?.length;
       renderSolarPanels(libraries.geometry, map, panelConfigOrRange);
@@ -268,13 +228,13 @@ export default function DataLayers() {
           <div className="col-md-8 position-relative">
             <div ref={mapRef} id="map" style={{ height: "100vh" }} />
             {isHomeCandiate && (
-              <First
+              <BuildingInsightFirstCard
                 completeAddress={completeAddress}
                 buildingInsights={buildingInsights}
               />
             )}
             {showSolarPotential && (
-              <Second
+              <BuildingInsightSecondCard
                 configId={configId}
               />
             )}
@@ -300,7 +260,7 @@ export default function DataLayers() {
                   {openSection === "section1" && (
                     <>
 
-                      <ToggleSection1
+                      <SolarHomeSection
                         averageBill={averageBill}
                         handleInputChange={handleInputChange}
                         showSolarPanels={showSolarPanels}
@@ -341,7 +301,7 @@ export default function DataLayers() {
                   </div>
 
                   {openSection === "section2" && (
-                    <ToggleSection2
+                    <SolarUserDetails
                       showSolarPotential={showSolarPotential}
                       formData={formData}
                       setFormData={setFormData}

@@ -1,11 +1,10 @@
 import { useCallback, useContext } from 'react';
 import { Tooltip, IconButton, Chip } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import getSolarSuitabilityRating from "../../utils/getSolarSuitabilityRating";
-import { AppContext } from '../../context/Context';
+import { AppContext } from '../../../context/Context';
 
-export default function First({ completeAddress, buildingInsights }) {
-    const { configId } = useContext(AppContext);
+export default function BuildingInsightFirstCard() {
+    const { configId, buildingInsights, completeAddress } = useContext(AppContext);
     const getSolarSuitabilityRating = () => {
         // debugger
         const sunshineHours = buildingInsights?.solarPotential?.maxSunshineHoursPerYear || 0;
@@ -111,47 +110,6 @@ export default function First({ completeAddress, buildingInsights }) {
                         <span>Large system</span>
                         <span className="value">18kW</span>
                     </div>
-                    {/* <div className="info-icon data-row" style={{ display: "flex", flexDirection: "row" }}>
-                        <span>About this data</span>
-                        <span>
-                            <Tooltip
-                                title={
-                                    <span style={{ fontSize: '12px' }}>
-                                        Based on daily readings of solar energy for your location, accounting for cloud cover and shading from trees and other structures.<br />
-                                        To be revised. Also, this value factors in the azimuth of the property’s roof-faces/segments, right? Does it also factor in roof area?
-                                    </span>
-                                }
-                                arrow
-                                placement="top-start"
-                            >
-                                <IconButton size="small" style={{ marginTop: "-5px", color: 'black' }} >
-                                    <InfoOutlinedIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
-
-                        </span>
-                    </div> */}
-
-                    {/* <div className="data-row">
-                        <span>Max panel count</span>
-                        <span className="value">{buildingInsights?.solarPotential?.maxArrayPanelsCount || 'N/A'}</span>
-                    </div> */}
-                    {/* <div className="data-row">
-                        <span>CO₂ savings</span>
-                        <span className="value">
-                            {buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh
-                                ? `${buildingInsights?.solarPotential?.carbonOffsetFactorKgPerMwh.toFixed(1)} Kg/MWh`
-                                : 'N/A'}
-                        </span>
-                    </div> */}
-                    {/* <div className="data-row">
-                        <span>Solar Potential</span>
-                        <span className="value">{buildingInsights?.solarPotential?.maxArrayPanelsCount || 'N/A'}</span>
-                    </div>
-                    <div className="data-row">
-                        <span>Yearly Energy</span>
-                        <span className="value">{buildingInsights?.solarPotential?.maxArrayPanelsCount || 'N/A'}</span>
-                    </div> */}
                 </div>
             </div>
             <div className="insights-card position-absolute bg-white" 

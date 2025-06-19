@@ -1,12 +1,13 @@
 // src/hooks/useConfigId.js
 import { useContext } from 'react';
-import { findSolarConfig } from "../pages/FinalResult/Utils";
+import { findSolarConfig } from "../utils/findSolarConfig";
 import { AppContext } from '../context/Context';
 import { SOLAR_CONSTANTS } from '../constants/solarConstants';
 
 export function useConfigId() {
     const { setConFigID, storeInstallationSizeKw, storeYearlyEnergy,
-        totalCostwithoutSolar10, totalCostwithoutSolar20, savingFun, totalCostwithoutSolar30, totalCostwithoutSolar,
+        totalCostwithoutSolar10, totalCostwithoutSolar20, savingFun,
+        totalCostwithoutSolar30, totalCostwithoutSolar, buildingInsights,
         yearlyEnergyCovered } = useContext(AppContext);
     const {
         panelCapacityWattsInput,
@@ -23,13 +24,14 @@ export function useConfigId() {
         solarIncentives
     } = SOLAR_CONSTANTS;
 
-    const getConfigId = ({
-        averageBill,
-        buildingInsights,
-    }) => {
+    const getConfigId = ({ averageBill }) => {
+        console.log("averageBill", averageBill)
         const yearlyKwhEnergyConsumption = (averageBill / energyCostPerKwhInput) * 12;
         const defaultPanelCapacity = buildingInsights?.solarPotential?.panelCapacityWatts;
         const panelCapacityRatio = panelCapacityWattsInput / defaultPanelCapacity;
+
+        const monthlyKwhEnergyConsumption = averageBill / energyCostPerKwhInput;
+
 
         const PanelCount = findSolarConfig(
             buildingInsights?.solarPotential?.solarPanelConfigs,

@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { useContext, useState } from 'react';
+import { useContext, useState, useMemo, useRef } from 'react';
 import { AppContext } from '../../context/Context';
 
-export default function EstimatedAddress() {
+export default function ConfirmAddressPage() {
     const navigate = useNavigate();
     const { userAddress, completeAddress } = useContext(AppContext);
 
@@ -13,13 +13,40 @@ export default function EstimatedAddress() {
     const markerColor = "red";
     const lat = completeAddress?.geo?.[0]?.toFixed(5);
     const long = completeAddress?.geo?.[1]?.toFixed(5);
-    const [heading, setHeading] = useState(0);
-
     const apikey = process.env.REACT_APP_GOOGLE_MAP_API_KEY;
 
-    const handleDirectionClick = (angle) => {
-        setHeading(angle);
+    const [heading, setHeading] = useState(0);
+    const [streetViewSrc, setStreetViewSrc] = useState('');
+    const imageCache = useRef({}); // heading -> image URL
+
+    const satelliteImage = useMemo(() => {
+        return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${long}&zoom=${zoom}&size=${size}&maptype=satellite&markers=color:${markerColor}%7C${lat},${long}&key=${apikey}`;
+    }, [lat, long, apikey]);
+
+    const generateStreetViewUrl = (angle) => {
+        return `https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${lat},${long}&fov=${fov}&heading=${angle}&pitch=${pitch}&key=${apikey}`;
     };
+
+    const handleDirectionClick = (angle) => {
+        if (angle !== heading) {
+            setHeading(angle);
+
+            if (imageCache.current[angle]) {
+                setStreetViewSrc(imageCache.current[angle]);
+            } else {
+                const newUrl = generateStreetViewUrl(angle);
+                imageCache.current[angle] = newUrl;
+                setStreetViewSrc(newUrl);
+            }
+        }
+    };
+
+    // Initialize first load image
+    useMemo(() => {
+        const initialUrl = generateStreetViewUrl(heading);
+        imageCache.current[heading] = initialUrl;
+        setStreetViewSrc(initialUrl);
+    }, [lat, long]);
 
     return (
         <div>
@@ -53,7 +80,7 @@ export default function EstimatedAddress() {
                                         </p>
 
                                         <div className="mt-5">
-                                            <button onClick={() => navigate('/map')} className="button-element">
+                                            <button onClick={() => navigate('/solar-calculator')} className="button-element">
                                                 That’s Right
                                                 <i className="fas fa-long-arrow-alt-right ms-2 icon-large"></i>
                                             </button>
@@ -72,14 +99,14 @@ export default function EstimatedAddress() {
                                     <div className="d-flex flex-row justify-content-center align-items-center flex-wrap gap-3 w-100 position-relative">
 
                                         <img
-                                            src={`https://maps.googleapis.com/maps/api/staticmap?center=${lat},${long}&zoom=${zoom}&size=${size}&maptype=satellite&markers=color:${markerColor}%7C${lat},${long}&key=${apikey}`}
+                                            src={satelliteImage}
                                             alt='Satellite View'
                                             className="img-fluid img-satellite"
                                         />
 
                                         <div className="street-view-wrapper">
                                             <img
-                                                src={`https://maps.googleapis.com/maps/api/streetview?size=${size}&location=${lat},${long}&fov=${fov}&heading=${heading}&pitch=${pitch}&key=${apikey}`}
+                                                src={streetViewSrc}
                                                 alt='Street View'
                                                 className="img-fluid img-street-view"
                                             />

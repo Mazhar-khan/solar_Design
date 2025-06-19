@@ -1,0 +1,12 @@
+Address Input Page ( First Page )
+
+=> after selection of address a function calls name "handlePlaceSelection" that analyze address and 
+arrange it as a formate address through a utility function name "formatFullAddress" and get state name
+from place and compare it with constant bills of that state and set default bill of user of that state
+and store it in context 
+
+
+// check api abdunt calls
+// calculations check
+// check annual heatmap
+ 
