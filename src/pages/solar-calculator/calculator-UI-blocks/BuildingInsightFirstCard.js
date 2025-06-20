@@ -5,21 +5,22 @@ import { AppContext } from '../../../context/Context';
 
 export default function BuildingInsightFirstCard() {
     const { configId, buildingInsights, completeAddress } = useContext(AppContext);
+
     const getSolarSuitabilityRating = () => {
-        // debugger
         const sunshineHours = buildingInsights?.solarPotential?.maxSunshineHoursPerYear || 0;
-        const roofArea = buildingInsights?.solarPotential?.wholeRoofStats?.areaMeters2 || 0;
-        const irradiance = buildingInsights?.solarPotential?.wholeRoofStats?.sunshineQuantiles|| 0; // kWh/m²/year
-
-        if (sunshineHours > 2000 && roofArea > 100 && irradiance > 1800) {
+        console.log(sunshineHours)
+        if (sunshineHours >= 2200) {
             return 'Great';
-        } else if (sunshineHours > 1500 && roofArea > 70 && irradiance > 1500) {
+        } else if (sunshineHours >= 1600 && sunshineHours <= 2200) {
             return 'Good';
-        } else {
+        } else if (sunshineHours >= 1200 && sunshineHours <= 1600) {
             return 'OK';
+        } else {
+            return 'Poor';
         }
-    }
+    };
 
+    //
     // const get = getSolarSuitabilityRating(buildingInsights);
     const get = getSolarSuitabilityRating();
 
@@ -54,10 +55,10 @@ export default function BuildingInsightFirstCard() {
                         }
                     </span> <br />
                 </div>
-                <span className="value" style={{ fontWeight:"400",}} >Your Home is {get} candidate</span>
+                <span className="value" style={{ fontWeight: "400", }} >Your Home is {get} candidate</span>
                 <hr />
                 <div className="card-body">
-                      <div className="info-icon data-row" style={{ display: "flex", flexDirection: "row" }}>
+                    <div className="info-icon data-row" style={{ display: "flex", flexDirection: "row" }}>
                         <span>About this data</span>
                         <span>
                             <Tooltip
@@ -112,8 +113,8 @@ export default function BuildingInsightFirstCard() {
                     </div>
                 </div>
             </div>
-            <div className="insights-card position-absolute bg-white" 
-            style={{ bottom: "15px", left: "300px", zIndex: 1000, padding:'20px',borderRadius:'10px' }}>
+            <div className="insights-card position-absolute bg-white"
+                style={{ bottom: "15px", left: "300px", zIndex: 1000, padding: '20px', borderRadius: '10px' }}>
                 <div className="card-header">
                     <i className="fas fa-layer-group icon"></i>
                     <span className="title">Solar Intensity Key</span>

@@ -158,23 +158,15 @@ export default function SolarHomeSection({
 
                 {/* Toggles */}
                 {/* Heatmap Configuration Section */}
-                <fieldset className="border rounded p-4 mt-4 bg-light-subtle">
+                {/* <fieldset className="border rounded p-4 mt-4 bg-light-subtle">
                     <legend className="fs-5 text-dark-emphasis mb-3">Solar Intensity Heatmap</legend>
 
-                    {/* Monthly Heatmap Toggle */}
                     <div className="mb-3">
                         <div className="d-flex justify-content-between align-items-center">
                             <label className="form-label fw-semibold mb-1">
                                 Average Monthly Intensity
                             </label>
                             <div className="form-check form-switch" style={{ padding: 0 }}>
-                                {/* <input
-                                    className="form-check-input"
-                                    type="checkbox"
-                                    style={{ width: '2rem', height: '1rem', cursor: 'pointer' }}
-                                    checked={showMonthlyHeatMap}
-                                    onChange={ handleMonthlyToggle}
-                                /> */}
 
                                 <input
                                     className="form-check-input"
@@ -197,7 +189,6 @@ export default function SolarHomeSection({
                         </small>
                     </div>
 
-                    {/* Month Dropdown Selector */}
                     {showMonthlyHeatMap && (
                         <div className="mb-4">
                             <label htmlFor="monthDropdown" className="form-label fw-semibold mb-1">
@@ -223,7 +214,6 @@ export default function SolarHomeSection({
                         </div>
                     )}
 
-                    {/* Annual Heatmap Toggle */}
                     <div>
                         <div className="d-flex justify-content-between align-items-center bg-white">
                             <label className="form-label fw-semibold mb-1">
@@ -250,7 +240,7 @@ export default function SolarHomeSection({
                                 : 'Annual heatmap is currently not shown.'}
                         </small>
                     </div>
-                </fieldset>
+                </fieldset> */}
 
             </div>
         </>
