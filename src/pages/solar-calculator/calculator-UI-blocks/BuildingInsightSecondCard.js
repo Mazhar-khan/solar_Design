@@ -14,9 +14,9 @@ export default function BuildingInsightSecondCard() {
 
     const data = [
         ["Year", "With Solar", "Without Solar"],
-        ["10 Years", installationCost, withSolarCost10 || 0],
-        ["20 Years", installationCost, withSolarCost20 || 0],
-        ["30 Years", installationCost, withSolarCost30 || 0],
+        ["2025", installationCost, withSolarCost10 || 0],
+        ["2035", installationCost, withSolarCost20 || 0],
+        ["2045", installationCost, withSolarCost30 || 0],
     ];
 
     const chartOptions = {

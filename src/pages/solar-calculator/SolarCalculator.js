@@ -38,10 +38,10 @@ export default function SolarCalculator() {
 
   const [solarPanels, setSolarPanels] = useState([]);
   const [hitPanelCount, setHitPanelCount] = useState(null);
-  const [isPanellChange, setIsPanellChange] = useState(false)
+  const [isPanellChange, setIsPanellChange] = useState(false);
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "" });
 
-
-
+const isFormComplete = Object.values(formData).every((val) => val.trim() !== "");
 
   //custom hooks
   const { renderSolarPanels } = useRenderSolarPanels({
@@ -51,13 +51,13 @@ export default function SolarCalculator() {
     averageBill,
     hitPanelCount
   })
-  useFetchLayer({
-    map, layerId, geometryLib: libraries.geometry, setLayer, showRoofOnly, apiKey,
-    overlaysRef, setLoading, showAnnualHeatMap, showMonthlyHeatMap, selectedMonth, setSelectedMonth
-  });
+  // useFetchLayer({
+  //   map, layerId, geometryLib: libraries.geometry, setLayer, showRoofOnly, apiKey,
+  //   overlaysRef, setLoading, showAnnualHeatMap, showMonthlyHeatMap, selectedMonth, setSelectedMonth
+  // });
   const { loadBuildingInsights } = useLoadBuildingInsights({});
   useInitializeMap({ mapRef, setLibraries, setMap, renderSolarPanels });
-  const { getConfigId } = useConfigId();
+  const { getConfigId } = useConfigId(configId, hitPanelCount);
 
   // toggle panels sections
   const toggleSection = (section) => {
@@ -125,11 +125,7 @@ export default function SolarCalculator() {
       return newState;
     });
     // showSolarPanels == false means toggle is on 
-    if (showSolarPanels === false) {
-
-    } else if (showSolarPanels === true) {
-
-    }
+    console.log("configIII", configId);
   };
 
   // stric electricity bill in specific range
@@ -142,7 +138,9 @@ export default function SolarCalculator() {
   };
 
   useEffect(() => {
+
     if (map && libraries.geometry) {
+
       renderSolarPanels(libraries.geometry, map);
     } else {
       solarPanels.forEach(panel => panel.setMap(null));
@@ -151,17 +149,23 @@ export default function SolarCalculator() {
 
   }, [showSolarPanels, averageBill, hitPanelCount]);
 
+  useEffect(() => {
+    if (averageBill && configId !== null) {
+      getConfigId({ averageBill, customPanelCount: configId });
+    }
+  }, [averageBill, configId, getConfigId]);
+
 
   return (
     <section className="container-fluid p-0">
       <div className="row g-0">
         <div className="col-md-8 position-relative">
-          {/* <div ref={mapRef} id="map" style={{ height: "100vh" }} /> */}
-          <img
+          <div ref={mapRef} id="map" style={{ height: "100vh" }} />
+          {/* <img
             src={`https://maps.googleapis.com/maps/api/staticmap?center=${completeAddress?.geo[0]},${completeAddress?.geo[1]}&zoom=20&size=800x800&maptype=satellite&key=${apiKey}`}
             alt="Static Map"
             style={{ width: '100%', height: '100vh', objectFit: 'cover' }}
-          />
+          /> */}
 
 
           {loading && <div className="rooftop-loader"></div>}
@@ -231,9 +235,9 @@ export default function SolarCalculator() {
                 {openSection === "section2" && (
                   <SolarUserDetails
                     showSolarPotential={showSolarPotential}
-                  // formData={formData}
-                  // setFormData={setFormData}
-                  // isFormComplete={isFormComplete}
+                    formData={formData}
+                    setFormData={setFormData}
+                    isFormComplete={isFormComplete}
                   />
                 )}
               </div>

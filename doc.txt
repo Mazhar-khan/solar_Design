@@ -9,4 +9,14 @@ and store it in context
 // check api abdunt calls
 // calculations check
 // check annual heatmap
+
+
+
+
+
+
+
+zoom khatam
+heatmap end
+
  

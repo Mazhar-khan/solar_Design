@@ -1,5 +1,5 @@
 export default function SolarUserDetails({
-    showSolarPotential,formData,setFormData,isFormComplete
+    showSolarPotential, formData, setFormData, isFormComplete
 }) {
     return (
         <>

@@ -37,6 +37,7 @@ export const AppProvider = ({ children }) => {
         const costwithoutsolar = localStorage.getItem('costWithoutsolar');
         const savingVar = localStorage.getItem('savings');
         const Bill = localStorage.getItem('Bill');
+        const unitPerWattPrice = localStorage.getItem('unitPerWattPrice');
 
         if (storedInsights) setBuildingInsightsState(JSON.parse(storedInsights));
         if (storedLayers) setDataLayersState(JSON.parse(storedLayers));
@@ -53,6 +54,7 @@ export const AppProvider = ({ children }) => {
         if (costwithoutsolar) setWithSolarCost(localStorage.getItem('costWithoutsolar'));
         if (savingVar) setSaving(localStorage.getItem('savings'));
         if (Bill) setDefaultBill(localStorage.getItem('Bill'));
+        if (unitPerWattPrice) setDefaultBill(localStorage.getItem('unitPerWattPrice'));
     }, []);
 
     const setBuildingInsights = (value) => {
@@ -131,8 +133,8 @@ export const AppProvider = ({ children }) => {
     }
 
     const storeEnergyPrice = (value) => {
-        setDefaultBill(value);
-        localStorage.setItem("Bill", JSON.stringify(value))
+        setEnergypriceperKW(value);
+        localStorage.setItem("unitPerWattPrice", JSON.stringify(value))
     }
 
     return (
@@ -167,7 +169,9 @@ export const AppProvider = ({ children }) => {
                 savingFun,
                 saving,
                 storeBill,
-                defaultBill
+                defaultBill,
+                storeEnergyPrice,
+                energypriceperKW
             }}
         >
             {children}
