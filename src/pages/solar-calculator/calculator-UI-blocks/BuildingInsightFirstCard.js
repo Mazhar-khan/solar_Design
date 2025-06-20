@@ -122,7 +122,7 @@ export default function BuildingInsightFirstCard() {
                 <hr />
                 <div className="card-body bg-white" style={{ width: '100%' }} >
                     <div style={{ display: "flex", alignItems: "center" }}>
-                        <span style={{ marginRight: "10px" }} >Shaday</span>
+                        <span style={{ marginRight: "10px" }} >Shady</span>
                         <div class="sun-gradient" style={{ flex: 1, height: '10px' }} ></div>
                         <span style={{ marginLeft: '30px' }}>Sunny</span>
                     </div>

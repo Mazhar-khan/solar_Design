@@ -43,6 +43,7 @@ export const useInitializeMap = ({ mapRef, setLibraries, setMap, renderSolarPane
         scrollwheel: false,            // Prevent zooming with mouse wheel
         disableDoubleClickZoom: true, // Prevent zooming by double-click
         gestureHandling: 'none',
+        disableDefaultUI: true
       });
       // setMap(null);
       // setLibraries({});
