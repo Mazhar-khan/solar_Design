@@ -51,10 +51,10 @@ const isFormComplete = Object.values(formData).every((val) => val.trim() !== "")
     averageBill,
     hitPanelCount
   })
-  // useFetchLayer({
-  //   map, layerId, geometryLib: libraries.geometry, setLayer, showRoofOnly, apiKey,
-  //   overlaysRef, setLoading, showAnnualHeatMap, showMonthlyHeatMap, selectedMonth, setSelectedMonth
-  // });
+  useFetchLayer({
+    map, layerId, geometryLib: libraries.geometry, setLayer, showRoofOnly, apiKey,
+    overlaysRef, setLoading, showAnnualHeatMap, showMonthlyHeatMap, selectedMonth, setSelectedMonth
+  });
   const { loadBuildingInsights } = useLoadBuildingInsights({});
   useInitializeMap({ mapRef, setLibraries, setMap, renderSolarPanels });
   const { getConfigId } = useConfigId(configId, hitPanelCount);
