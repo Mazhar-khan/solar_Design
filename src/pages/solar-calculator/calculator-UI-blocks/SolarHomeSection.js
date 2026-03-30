@@ -23,14 +23,14 @@ export default function SolarHomeSection({
     toggleAnnualHeatMap,
     setHitPanelCount
 }) {
-    const { configId, setConFigID, buildingInsights, defaultBill } = useContext(AppContext);
-    const {
-        panelCapacityWattsInput,
-        panelCapacityWatts,
-        energyCostPerKwhInput,
-        installationCostPerWatt,
-        dcToAcDerateInput,
-    } = SOLAR_CONSTANTS;
+    const { configId, setConFigID } = useContext(AppContext);
+    // const {
+    //     panelCapacityWattsInput,
+    //     panelCapacityWatts,
+    //     energyCostPerKwhInput,
+    //     installationCostPerWatt,
+    //     dcToAcDerateInput,
+    // } = SOLAR_CONSTANTS;
     const { getConfigId } = useConfigId();
 
     const updateRangeFunc = (event) => {
@@ -42,13 +42,13 @@ export default function SolarHomeSection({
         // updateConfig(val);
     };
 
-    const updateConfig = (val) => {
-        const averageBill = val;
-        console.log("averageBill",averageBill)
-        const configId = getConfigId({ averageBill });
-        setConFigID(configId);
-        console.log("configId", configId)
-    }
+    // const updateConfig = (val) => {
+    //     const averageBill = val;
+    //     console.log("averageBill",averageBill)
+    //     const configId = getConfigId({ averageBill });
+    //     setConFigID(configId);
+    //     console.log("configId", configId)
+    // }
 
 
     return (
