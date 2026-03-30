@@ -33,7 +33,7 @@ export const AppProvider = ({ children }) => {
         const costwithoutsolar10 = localStorage.getItem('costWithoutsolar10');
         const costwithoutsolar20 = localStorage.getItem('costWithoutsolar20');
         const costwithoutsolar30 = localStorage.getItem('costWithoutsolar30');
-        const energyPrice = localStorage.getItem('costWithoutsolar');
+        // const energyPrice = localStorage.getItem('costWithoutsolar');
         const costwithoutsolar = localStorage.getItem('costWithoutsolar');
         const savingVar = localStorage.getItem('savings');
         const Bill = localStorage.getItem('Bill');
